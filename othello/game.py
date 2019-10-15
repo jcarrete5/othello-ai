@@ -1,7 +1,11 @@
 import asyncio
 import enum
+import logging
 from typing import Optional, List, Tuple
 from collections import namedtuple
+import othello.bitboard as bb
+
+_logger = logging.getLogger(__name__)
 
 Position = namedtuple('Position', 'row, col', module=__name__)
 
@@ -16,7 +20,6 @@ class Color(enum.Enum):
 
 class Player:
     def __init__(self, color: Color):
-        assert color is not None
         self._color = color
         loop = asyncio.get_running_loop()
         self._move = loop.create_future()
@@ -28,7 +31,7 @@ class Player:
     @property
     async def move(self):
         """ The next move this player intends to make. """
-        return await self._move 
+        return await self._move
 
     @move.setter
     def move(self, value: Position):
@@ -41,103 +44,81 @@ class Player:
         loop = asyncio.get_running_loop()
         self._move = loop.create_future()
 
-class Board():
-    def __init__(self, size: int):
-        self._size = size
-        self._board: List[List[Optional[Color]]] = []
-        for _ in range(size):
-            self._board.append([None for _ in range(size)])
-    
-    @property
-    def size(self) -> int:
-        return self._size
-
-    async def place(self, pos: Position, color: Color):
-        """ Place a piece of color `color` at position `pos` """
-        assert 0 <= pos.row < self._size
-        assert 0 <= pos.col < self._size
-        if self._board[pos.row][pos.col] is None:
-            self._board[pos.row][pos.col] = color
-            await self._update(pos, color)
-        else:
-            raise IllegalMoveError
-
-    async def _update(self, pivot: Position, color: Color):
-        # TODO This is garbage; use bit masks to represent the board
-        def flip(row: int, col: int):
-            if self._board[row][col] == Color.BLACK:
-                self._board[row][col] = Color.WHITE
-            elif self._board[row][col] == Color.WHITE:
-                self._board[row][col] = Color.BLACK
-        async def n():
-            for row in range(pivot.row - 2, -1, -1):
-                if self._board[row][pivot.col] == color:
-                    for row in range(pivot.row - 1, row, -1):
-                        flip(row, pivot.col)
-                    break
-        async def ne():
-            for row in range(pivot.row - 2, -1, -1):
-                if self._board[row][pivot.col] == color:
-                    for row in range(pivot.row - 1, row, -1):
-                        flip(row, pivot.col)
-                    break
-        async def e():
-            for row in range(pivot.row - 2, -1, -1):
-                if self._board[row][pivot.col] == color:
-                    for row in range(pivot.row - 1, row, -1):
-                        flip(row, pivot.col)
-                    break
-        async def se():
-            for row in range(pivot.row - 2, -1, -1):
-                if self._board[row][pivot.col] == color:
-                    for row in range(pivot.row - 1, row, -1):
-                        flip(row, pivot.col)
-                    break
-        async def s():
-            for row in range(pivot.row - 2, -1, -1):
-                if self._board[row][pivot.col] == color:
-                    for row in range(pivot.row - 1, row, -1):
-                        flip(row, pivot.col)
-                    break
-        async def sw():
-            for row in range(pivot.row - 2, -1, -1):
-                if self._board[row][pivot.col] == color:
-                    for row in range(pivot.row - 1, row, -1):
-                        flip(row, pivot.col)
-                    break
-        async def w():
-            for row in range(pivot.row - 2, -1, -1):
-                if self._board[row][pivot.col] == color:
-                    for row in range(pivot.row - 1, row, -1):
-                        flip(row, pivot.col)
-                    break
-        async def nw():
-            for row in range(pivot.row - 2, -1, -1):
-                if self._board[row][pivot.col] == color:
-                    for row in range(pivot.row - 1, row, -1):
-                        flip(row, pivot.col)
-                    break
-        await asyncio.gather(n, ne, e, se, s, sw, w, nw)
-    
     def __repr__(self):
-        def symbol_for(space: Optional[Color]):
-            if space is None:
-                return '-'
-            elif space == Color.BLACK:
+        return f'Player: {self._color}'
+
+class Board():
+    def __init__(self):
+        self._white = 0x0000001008000000  # White piece bitboard
+        self._black = 0x0000000810000000  # Black piece bitboard
+    
+    def place(self, color: Color, pos: Position):
+        """ Place a piece of color `color` at position `pos` """
+        assert 0 <= pos.row < 8
+        assert 0 <= pos.col < 8
+        pos_mask = bb.pos_mask(*pos)
+        if color is Color.BLACK:
+            self._black |= pos_mask
+        elif color is Color.WHITE:
+            self._white |= pos_mask
+        else:
+            raise IllegalMoveError(f'Invalid color: {str(color)}')
+        self._capture(color, pos)
+    
+    def _capture(self, color: Color, pos: Position):
+        """ Find pieces that should be captured by playing `color` at `pos` and capture those pieces """
+        my_pieces = self._white if color is Color.WHITE else self._black
+        class State:
+            def __init__(self, dir_, init_bb=0x0):
+                self.bb = init_bb
+                self.dir = dir_
+                self.capped = False
+                self.on_edge = False
+            
+            def dilate(self):
+                bb.dilate(self.bb, self.dir)
+            
+            def should_commit(self):
+                return self.capped
+
+            def should_keep_dilating(self):
+                self.on_edge = len(set(self.dir) & set(bb.on_edge(self.bb))) > 0
+                self.capped = my_pieces & (bb.not_(bb.pos_mask(*pos)) & self.bb) != 0
+                return not self.on_edge and not self.capped
+        start = bb.pos_mask(*pos)
+        states = [State(dir_, start) for dir_ in {'n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'}]
+        for state in states:
+            while state.should_keep_dilating():
+                state.dilate()
+            if state.should_commit():
+                if color is Color.WHITE:
+                    self._white |= state.bb
+                elif color is Color.BLACK:
+                    self._black |= state.bb
+
+    def __repr__(self):
+        def symbol_at(row: int, col: int) -> str:
+            mask = bb.pos_mask(row, col)
+            if self._white & mask != 0:
+                return 'W'
+            elif self._black & mask != 0:
                 return 'B'
             else:
-                return 'W'
-        res = []
-        for row in self._board:
-            res.append(f'[{" ".join(map(symbol_for, row))}]')
+                return '-'
+        res = [symbol_at(r, c) for r in range(8) for c in range(8)]
         return '\n'.join(res)
 
-async def loop():
+async def loop(user: Player):
     # Game initialization
-    user = Player(Color.BLACK)
+    board = Board()
+    _logger.debug(repr(board))
     ai = Player(Color.WHITE)
     turn_player = user
 
     while True:
+        _logger.info(f'Waiting for {str(turn_player)} to make a move...')
         move = await turn_player.move
+        board.place(turn_player.color, move)
+        _logger.info(f'{str(turn_player)} played {move}')
+        # Toggle turn_player
         turn_player = user if turn_player is ai else ai
