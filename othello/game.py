@@ -2,19 +2,20 @@ import asyncio
 import enum
 import logging
 from typing import Optional, List, Tuple
-from collections import namedtuple
+import othello.ai as ai
 import othello.bitboard as bb
 
 _logger = logging.getLogger(__name__)
-
-Position = namedtuple('Position', 'row, col', module=__name__)
 
 class IllegalMoveError(Exception):
     """ Raised when an illegal move is attempted. """
     pass
 
 class Color(enum.Enum):
-    """ Represents color of pieces. """
+    """
+    Represents color of pieces.
+    There can only be two colors.
+    """
     BLACK = enum.auto()
     WHITE = enum.auto()
 
@@ -34,7 +35,7 @@ class Player:
         return await self._move
 
     @move.setter
-    def move(self, value: Position):
+    def move(self, value: bb.Position):
         if self._move.done():
             del self._move
         self._move.set_result(value)
@@ -51,21 +52,38 @@ class Board():
     def __init__(self):
         self._white = 0x0000001008000000  # White piece bitboard
         self._black = 0x0000000810000000  # Black piece bitboard
+
+    def empty_cells(self) -> bb.Bitboard:
+        return bb.not_(self._white | self._black)
+
+    def valid_moves_for(self, color: Color) -> List[bb.Position]:
+        if color is Color.BLACK:
+            my_pieces = self._black
+            foe_pieces = self._white
+        else:
+            my_pieces = self._white
+            foe_pieces = self._black
+        moves_bb = 0x0
+        for dir_ in bb.directions:
+            candidates = foe_pieces & bb.shift(my_pieces, dir_)
+            while candidates != 0:
+                shifted = bb.shift(candidates, dir_)
+                moves_bb |= self.empty_cells() & shifted
+                candidates = foe_pieces & shifted
+        return bb.to_list(moves_bb)
     
-    def place(self, color: Color, pos: Position):
+    def place(self, color: Color, pos: bb.Position):
         """ Place a piece of color `color` at position `pos` """
         assert 0 <= pos.row < 8
         assert 0 <= pos.col < 8
         pos_mask = bb.pos_mask(*pos)
         if color is Color.BLACK:
             self._black |= pos_mask
-        elif color is Color.WHITE:
-            self._white |= pos_mask
         else:
-            raise IllegalMoveError(f'Invalid color: {str(color)}')
+            self._white |= pos_mask
         self._capture(color, pos)
     
-    def _capture(self, color: Color, pos: Position):
+    def _capture(self, color: Color, pos: bb.Position):
         """ Find pieces that should be captured by playing `color` at `pos` and capture those pieces """
         my_pieces = self._white if color is Color.WHITE else self._black
         class State:
@@ -86,7 +104,7 @@ class Board():
                 self.capped = my_pieces & (bb.not_(bb.pos_mask(*pos)) & self.bb) != 0
                 return not self.on_edge and not self.capped
         start = bb.pos_mask(*pos)
-        states = [State(dir_, start) for dir_ in {'n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'}]
+        states = [State(dir_, start) for dir_ in bb.directions]
         for state in states:
             while state.should_keep_dilating():
                 state.dilate()
@@ -108,17 +126,19 @@ class Board():
         res = [symbol_at(r, c) for r in range(8) for c in range(8)]
         return '\n'.join(res)
 
-async def loop(user: Player):
+async def loop(user: Player, ai_player: Player, board: Board):
     # Game initialization
-    board = Board()
     _logger.debug(repr(board))
-    ai = Player(Color.WHITE)
     turn_player = user
 
     while True:
         _logger.info(f'Waiting for {str(turn_player)} to make a move...')
+        if turn_player is ai_player:
+            ai.turn.set()
+        else:
+            ai.turn.clear()
         move = await turn_player.move
         board.place(turn_player.color, move)
         _logger.info(f'{str(turn_player)} played {move}')
         # Toggle turn_player
-        turn_player = user if turn_player is ai else ai
+        turn_player = user if turn_player is ai_player else ai_player

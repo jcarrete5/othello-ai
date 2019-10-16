@@ -1,6 +1,9 @@
-import os, asyncio, logging
+import os
+import asyncio
+import logging
 import othello.ui as ui
 import othello.game as game
+import othello.ai as ai
 
 logging.basicConfig(style='{',
                     format='[{name}:{levelname}] In {funcName}: {message}',
@@ -9,9 +12,12 @@ logger = logging.getLogger(__name__)
 
 async def main():
     user = game.Player(game.Color.BLACK)
+    ai_player = game.Player(game.Color.WHITE)
+    board = game.Board()
     await asyncio.gather(
-        ui.loop(),
-        game.loop(user))
+        # ui.loop(),
+        ai.loop(ai.random, ai_player, board),
+        game.loop(user, ai_player, board))
 
 try:
     asyncio.run(main(), debug=True)
