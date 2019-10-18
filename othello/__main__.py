@@ -1,18 +1,8 @@
-import asyncio
 import logging
-from othello import ui, game
-from othello.player import Color, Player
-
-async def main():
-    user = Player(Color.BLACK)
-    ai_player = Player(Color.WHITE)
-    board = game.Board()
-    await asyncio.gather(
-        # ui.loop(),
-        game.loop(user, ai_player, board))
+from othello import ui
 
 try:
-    asyncio.run(main(), debug=True)
+    ui.loop()
 finally:
     logging.shutdown()
 

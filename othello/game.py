@@ -97,9 +97,10 @@ class Board():
         res = [symbol_at(r, c) for r in range(8) for c in range(8)]
         return '\n'.join(re.findall('........', ''.join(res)))
 
-async def loop(user: Player, ai_player: Player, board: Board):
+async def loop():
     # Game initialization
-    _LOGGER.debug(str(board))
+    _LOGGER.info('test')
+    _LOGGER.debug('Initial board\n%s', str(board))
     turn_player = user
 
     while True:

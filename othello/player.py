@@ -1,6 +1,10 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
 import asyncio
 import enum
-from othello import bitboard as bb
+
+if TYPE_CHECKING:
+    from othello.bitboard import Position
 
 
 class Color(enum.Enum):
@@ -23,12 +27,12 @@ class Player:
         return self._color
 
     @property
-    async def move(self):
+    async def move(self) -> Position:
         """ The next move this player intends to make. """
         return await self._move
 
     @move.setter
-    def move(self, value: bb.Position):
+    def move(self, value: Position):
         if self._move.done():
             del self._move
         self._move.set_result(value)

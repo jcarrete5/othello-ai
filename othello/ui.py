@@ -1,30 +1,25 @@
 import tkinter as tk
-import tkinter.ttk as ttk
-import asyncio
+import logging
 
-# pylint: disable=invalid-name
-_running = True
+_LOGGER = logging.getLogger(__name__)
 
-class App(ttk.Frame):
-    def __init__(self, master=None):
-        super().__init__(master)
-        self.master = master
-        self.create_widgets()
 
-    def create_widgets(self):
-        self.title_lbl = ttk.Label(text='Othello')
-        self.title_lbl.grid(row=0, column=0)
-        # self.othello_frame = ttk.Frame(self, )
+class BoardView:
+    def __init__(self, master):
+        self.canvas = tk.Canvas(master, width=400, height=400, bg='#060')
+        self.canvas.grid(row=0, column=0)
 
-def stop():
-    global _running
-    _running = False
 
-async def loop(interval=1/20):
-    global _running
+def init(root: tk.Tk):
+    root.title('Othello')
+    root.geometry('800x600')
+
+    main = tk.Frame(root)
+    main.pack_configure(expand=True, fill='both')
+    board_view = BoardView(main)
+
+
+def loop():
     root = tk.Tk()
-    # pylint: disable=unused-variable
-    app = App(root)
-    while _running:
-        root.update()
-        await asyncio.sleep(interval)
+    init(root)
+    root.mainloop()
