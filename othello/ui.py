@@ -2,6 +2,7 @@ import tkinter as tk
 import tkinter.ttk as ttk
 import asyncio
 
+# pylint: disable=invalid-name
 _running = True
 
 class App(ttk.Frame):

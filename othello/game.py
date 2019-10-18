@@ -1,16 +1,13 @@
-import asyncio
-import enum
 import logging
-from typing import Optional, List, Tuple
-import othello.ai as ai
-import othello.bitboard as bb
+import re
+from typing import List
+from othello import bitboard as bb
 from othello.player import Color, Player
 
-_logger = logging.getLogger(__name__)
+_LOGGER = logging.getLogger(__name__)
 
 class IllegalMoveError(Exception):
     """ Raised when an illegal move is attempted. """
-    pass
 
 
 class Board():
@@ -29,14 +26,14 @@ class Board():
             my_pieces = self._white
             foe_pieces = self._black
         moves_bb = 0x0
-        for dir_ in bb.directions:
+        for dir_ in bb.DIRECTIONS:
             candidates = foe_pieces & bb.shift(my_pieces, dir_)
             while candidates != 0:
                 shifted = bb.shift(candidates, dir_)
                 moves_bb |= self.empty_cells() & shifted
                 candidates = foe_pieces & shifted
         return bb.to_list(moves_bb)
-    
+
     def place(self, color: Color, pos: bb.Position):
         """ Place a piece of color `color` at position `pos` """
         assert 0 <= pos.row < 8
@@ -47,9 +44,12 @@ class Board():
         else:
             self._white |= pos_mask
         self._capture(color, pos)
-    
+
     def _capture(self, color: Color, pos: bb.Position):
-        """ Find pieces that should be captured by playing `color` at `pos` and capture those pieces """
+        """
+        Find pieces that should be captured by playing `color`
+        at `pos` and capture those pieces
+        """
         my_pieces = self._white if color is Color.WHITE else self._black
         empty = self.empty_cells()
         class State:
@@ -58,10 +58,11 @@ class Board():
                 self.dir = dir_
                 self.capped = False
                 self.on_edge = False
-            
+                self.on_empty = False
+
             def dilate(self):
                 self.bb = bb.dilate(self.bb, self.dir)
-            
+
             def should_commit(self):
                 return self.capped
 
@@ -72,7 +73,7 @@ class Board():
                 self.on_empty = empty & selected != 0
                 return not self.on_edge and not self.capped and not self.on_empty
         start = bb.pos_mask(*pos)
-        states = [State(dir_, start) for dir_ in bb.directions]
+        states = [State(dir_, start) for dir_ in bb.DIRECTIONS]
         for state in states:
             while state.should_keep_dilating():
                 state.dilate()
@@ -94,22 +95,21 @@ class Board():
             else:
                 return '-'
         res = [symbol_at(r, c) for r in range(8) for c in range(8)]
-        import re
         return '\n'.join(re.findall('........', ''.join(res)))
 
 async def loop(user: Player, ai_player: Player, board: Board):
     # Game initialization
-    _logger.debug(str(board))
+    _LOGGER.debug(str(board))
     turn_player = user
 
     while True:
-        _logger.info(f'Waiting for {str(turn_player)} to make a move...')
+        _LOGGER.info('Waiting for %s to make a move...', str(turn_player))
         if turn_player is ai_player:
-            ai.turn.set()
+            ai_player.turn.set()
         else:
-            ai.turn.clear()
+            ai_player.turn.clear()
         move = await turn_player.move
         board.place(turn_player.color, move)
-        _logger.info(f'{str(turn_player)} played {move}')
+        _LOGGER.info('%s played %s', str(turn_player), move)
         # Toggle turn_player
         turn_player = user if turn_player is ai_player else ai_player

@@ -1,6 +1,6 @@
 import asyncio
 import enum
-import othello.bitboard as bb
+from othello import bitboard as bb
 
 
 class Color(enum.Enum):
@@ -21,7 +21,7 @@ class Player:
     @property
     def color(self):
         return self._color
-    
+
     @property
     async def move(self):
         """ The next move this player intends to make. """
