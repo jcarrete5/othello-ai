@@ -1,8 +1,10 @@
 """
-Bitboard operations. Assumes the board is 8x8.
+Bitboard operations. All operations assume that the board is 8x8.
 """
 from typing import List
 from collections import namedtuple
+import operator as op
+from functools import reduce
 
 N_EDGE = 0xff00000000000000
 E_EDGE = 0x0101010101010101
@@ -29,11 +31,17 @@ def shift(bits: int, dir_: str, times: int = 1) -> int:
     if 'n' in dir_:
         res <<= 8 * times
     if 'e' in dir_:
+        # wall is a bit mask that ensures bits aren't shifted beyond where they are meant to go
+        wall = not_(reduce(op.or_, (W_EDGE >> shift_ for shift_ in range(times)), 0))
         res >>= 1 * times
+        res &= wall
     if 's' in dir_:
         res >>= 8 * times
     if 'w' in dir_:
+        # wall is a bit mask that ensures bits aren't shifted beyond where they are meant to go
+        wall = not_(reduce(op.or_, (E_EDGE << shift_ for shift_ in range(times)), 0))
         res <<= 1 * times
+        res &= wall
     return res & ALL_
 
 def on_edge(bits: int) -> str:
@@ -50,7 +58,9 @@ def on_edge(bits: int) -> str:
     return ''.join(edges)
 
 def dilate(bits: int, dir_: str, times: int = 1) -> int:
-    return bits | shift(bits, dir_, times)
+    for _ in range(times):
+        bits |= shift(bits, dir_)
+    return bits
 
 def not_(bits: int) -> int:
     return ~bits & ALL_
