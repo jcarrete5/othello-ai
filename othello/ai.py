@@ -1,17 +1,18 @@
 import asyncio
 import random as rand
 from typing import Callable
+from othello.player import Player
 import othello.game as game
 import othello.bitboard as bb
 
-Strategy = Callable[[bb.Bitboard], bb.Position]
+Strategy = Callable[[int], bb.Position]
 
 turn = asyncio.Event()
 
-async def loop(strategy: Strategy, player: game.Player, board: game.Board):
+async def loop(strategy: Strategy, player: Player, board: game.Board):
     while True:
         await turn.wait()
         player.move = strategy()
 
-def random(bb: game.Board) -> bb.Position:
+def random(bb: 'Board') -> bb.Position:
     pass

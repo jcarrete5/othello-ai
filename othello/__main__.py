@@ -4,6 +4,7 @@ import logging
 import othello.ui as ui
 import othello.game as game
 import othello.ai as ai
+from othello.player import Color, Player
 
 logging.basicConfig(style='{',
                     format='[{name}:{levelname}] In {funcName}: {message}',
@@ -11,8 +12,8 @@ logging.basicConfig(style='{',
 logger = logging.getLogger(__name__)
 
 async def main():
-    user = game.Player(game.Color.BLACK)
-    ai_player = game.Player(game.Color.WHITE)
+    user = Player(Color.BLACK)
+    ai_player = Player(Color.WHITE)
     board = game.Board()
     await asyncio.gather(
         # ui.loop(),

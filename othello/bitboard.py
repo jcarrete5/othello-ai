@@ -15,15 +15,14 @@ none = 0x0000000000000000
 directions = {'n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'}
 
 Position = namedtuple('Position', 'row, col', module=__name__)
-Bitboard = TypeVar('Bitboard', int)
 
-def pos_mask(row: int, col: int) -> Bitboard:
+def pos_mask(row: int, col: int) -> int:
     """ Return the bit mask for (row, col) on a bitboard. """
     assert 0 <= row < 8
     assert 0 <= col < 8
     return 0x8000000000000000 >> col >> row * 8
 
-def shift(bits: Bitboard, dir_: str, times: int=1) -> Bitboard:
+def shift(bits: int, dir_: str, times: int=1) -> int:
     """ Shift `bits` in direction `dir_` `times` times. """
     dir_ = dir_.lower()
     res = bits
@@ -37,7 +36,7 @@ def shift(bits: Bitboard, dir_: str, times: int=1) -> Bitboard:
         res <<= 1 * times
     return res & all_
 
-def on_edge(bits: Bitboard) -> str:
+def on_edge(bits: int) -> str:
     """ Returns the edges that contain on-bits. """
     edges = []
     if bits & n_edge:
@@ -50,11 +49,11 @@ def on_edge(bits: Bitboard) -> str:
         edges.append('w')
     return ''.join(edges)
 
-def dilate(bits: Bitboard, dir_: str, times: int=1) -> Bitboard:
+def dilate(bits: int, dir_: str, times: int=1) -> int:
     return bits | shift(bits, dir_, times)
 
-def not_(bits: Bitboard) -> Bitboard:
+def not_(bits: int) -> int:
     return ~bits & all_
 
-def to_list(bits: Bitboard) -> List[Position]:
+def to_list(bits: int) -> List[Position]:
     pass

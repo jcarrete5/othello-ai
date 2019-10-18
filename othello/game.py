@@ -4,6 +4,7 @@ import logging
 from typing import Optional, List, Tuple
 import othello.ai as ai
 import othello.bitboard as bb
+from othello.player import Color, Player
 
 _logger = logging.getLogger(__name__)
 
@@ -11,49 +12,13 @@ class IllegalMoveError(Exception):
     """ Raised when an illegal move is attempted. """
     pass
 
-class Color(enum.Enum):
-    """
-    Represents color of pieces.
-    There can only be two colors.
-    """
-    BLACK = enum.auto()
-    WHITE = enum.auto()
-
-class Player:
-    def __init__(self, color: Color):
-        self._color = color
-        loop = asyncio.get_running_loop()
-        self._move = loop.create_future()
-
-    @property
-    def color(self):
-        return self._color
-    
-    @property
-    async def move(self):
-        """ The next move this player intends to make. """
-        return await self._move
-
-    @move.setter
-    def move(self, value: bb.Position):
-        if self._move.done():
-            del self._move
-        self._move.set_result(value)
-
-    @move.deleter
-    def move(self):
-        loop = asyncio.get_running_loop()
-        self._move = loop.create_future()
-
-    def __repr__(self):
-        return f'Player: {self._color}'
 
 class Board():
     def __init__(self):
         self._white = 0x0000001008000000  # White piece bitboard
         self._black = 0x0000000810000000  # Black piece bitboard
 
-    def empty_cells(self) -> bb.Bitboard:
+    def empty_cells(self) -> int:
         return bb.not_(self._white | self._black)
 
     def valid_moves_for(self, color: Color) -> List[bb.Position]:
@@ -86,6 +51,7 @@ class Board():
     def _capture(self, color: Color, pos: bb.Position):
         """ Find pieces that should be captured by playing `color` at `pos` and capture those pieces """
         my_pieces = self._white if color is Color.WHITE else self._black
+        empty = self.empty_cells()
         class State:
             def __init__(self, dir_, init_bb=0x0):
                 self.bb = init_bb
@@ -94,15 +60,17 @@ class Board():
                 self.on_edge = False
             
             def dilate(self):
-                bb.dilate(self.bb, self.dir)
+                self.bb = bb.dilate(self.bb, self.dir)
             
             def should_commit(self):
                 return self.capped
 
             def should_keep_dilating(self):
+                selected = bb.not_(bb.pos_mask(*pos)) & self.bb
                 self.on_edge = len(set(self.dir) & set(bb.on_edge(self.bb))) > 0
-                self.capped = my_pieces & (bb.not_(bb.pos_mask(*pos)) & self.bb) != 0
-                return not self.on_edge and not self.capped
+                self.capped = my_pieces & selected != 0
+                self.on_empty = empty & selected != 0
+                return not self.on_edge and not self.capped and not self.on_empty
         start = bb.pos_mask(*pos)
         states = [State(dir_, start) for dir_ in bb.directions]
         for state in states:
@@ -111,24 +79,27 @@ class Board():
             if state.should_commit():
                 if color is Color.WHITE:
                     self._white |= state.bb
+                    self._black &= bb.not_(state.bb)
                 elif color is Color.BLACK:
                     self._black |= state.bb
+                    self._white &= bb.not_(state.bb)
 
-    def __repr__(self):
+    def __str__(self):
         def symbol_at(row: int, col: int) -> str:
             mask = bb.pos_mask(row, col)
             if self._white & mask != 0:
-                return 'W'
+                return '\u2588'
             elif self._black & mask != 0:
-                return 'B'
+                return '\u2591'
             else:
                 return '-'
         res = [symbol_at(r, c) for r in range(8) for c in range(8)]
-        return '\n'.join(res)
+        import re
+        return '\n'.join(re.findall('........', ''.join(res)))
 
 async def loop(user: Player, ai_player: Player, board: Board):
     # Game initialization
-    _logger.debug(repr(board))
+    _logger.debug(str(board))
     turn_player = user
 
     while True:
