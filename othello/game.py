@@ -4,9 +4,10 @@ import re
 import threading
 from typing import TYPE_CHECKING, List
 from othello import bitboard as bb
+from othello.player import Color
 
 if TYPE_CHECKING:
-    from othello.player import Color, Player
+    from othello.player import Player
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -55,6 +56,9 @@ class BoardState:
         with self._black_lock:
             self._black = value
             self._changed()
+
+    def __eq__(self, other: BoardState):
+        return self.white == other.white and self.black == other.black
 
     def __str__(self):
         def symbol_at(row: int, col: int) -> str:
@@ -132,16 +136,20 @@ class Board:
                 return not self.on_edge and not self.capped and not self.on_empty
         start = bb.pos_mask(*pos)
         states = [State(dir_, start) for dir_ in bb.DIRECTIONS]
+        did_commit = False
         for state in states:
             while state.should_keep_dilating():
                 state.dilate()
             if state.should_commit():
+                did_commit = True
                 if color is Color.WHITE:
                     self.board_state.white |= state.bb
                     self.board_state.black &= bb.not_(state.bb)
                 elif color is Color.BLACK:
                     self.board_state.black |= state.bb
                     self.board_state.white &= bb.not_(state.bb)
+        if not did_commit:
+            raise IllegalMoveError
 
     def __str__(self):
         return str(self.board_state)
