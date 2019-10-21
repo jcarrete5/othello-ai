@@ -2,6 +2,7 @@ from __future__ import annotations
 import logging
 import re
 import threading
+import asyncio
 from typing import TYPE_CHECKING, List
 from othello import bitboard as bb
 from othello.player import Color
@@ -97,20 +98,25 @@ class Board:
         return bb.to_list(moves_bb)
 
     def place(self, color: Color, pos: bb.Position):
-        """ Place a piece of color `color` at position `pos` """
+        """ Place a piece of color `color` at position `pos`
+
+        Raises an IllegalMoveError if an illegal move was attempted
+        """
         assert 0 <= pos.row < 8
         assert 0 <= pos.col < 8
         pos_mask = bb.pos_mask(*pos)
+        self._capture(color, pos)
         if color is Color.BLACK:
             self.board_state.black |= pos_mask
         else:
             self.board_state.white |= pos_mask
-        self._capture(color, pos)
 
     def _capture(self, color: Color, pos: bb.Position):
         """
         Find pieces that should be captured by playing `color`
         at `pos` and capture those pieces
+
+        Raises an IllegalMoveError if an illegal move was attempted
         """
         my_pieces = self.board_state.white if color is Color.WHITE else self.board_state.black
         empty = self.empty_cells()
