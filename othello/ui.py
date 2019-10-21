@@ -6,8 +6,17 @@ from othello import bitboard as bb
 
 if TYPE_CHECKING:
     from othello.game import BoardState
+    from othello.player import Color
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def ui_move_provider(board_state: BoardState):
+    ...
+
+
+def new_game(with_player):
+    _LOGGER.info('New game started')
 
 
 class BoardView:
@@ -71,11 +80,18 @@ class BoardView:
 
 def init_widgets(root: tk.Tk, board_state: BoardState):
     root.title('Othello')
+    menubar = tk.Menu(root)
+    gamemenu = tk.Menu(menubar, tearoff=0)
+    newgamemenu = tk.Menu(gamemenu, tearoff=0)
+    newgamemenu.add_command(label='Computer', command=lambda: new_game())
+    gamemenu.add_cascade(label='New Game', menu=newgamemenu)
+    menubar.add_cascade(label='Game', menu=gamemenu)
+    root.config(menu=menubar)
 
     main = tk.Frame(root)
     main.pack_configure(expand=True, fill='both')
     board_view = BoardView(main, board_state)
-    board_state.onchange(lambda w, b: root.after(0, board_view.redraw(w, b)))
+    board_state.onchange(lambda w, b, c: root.after(0, board_view.redraw(w, b)))
 
 def loop(board_state: BoardState):
     _LOGGER.info('Init ui loop')

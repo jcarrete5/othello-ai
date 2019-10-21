@@ -3,7 +3,7 @@ import logging
 import re
 import threading
 import asyncio
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Callable
 from othello import bitboard as bb
 from othello.player import Color
 
@@ -11,6 +11,8 @@ if TYPE_CHECKING:
     from othello.player import Player
 
 _LOGGER = logging.getLogger(__name__)
+# pylint: disable=invalid-name
+_event_loop = None
 
 
 class IllegalMoveError(Exception):
@@ -25,13 +27,34 @@ class BoardState:
         self._black_lock = threading.Lock()
         self._black = init_black
         self._change_callbacks = set()
+        self._turn_player_color_lock = threading.Lock()
+        self._turn_player_color = Color.BLACK
+
+    def empty_cells(self) -> int:
+        return bb.not_(self.white | self.black)
+
+    def valid_moves_for(self, color: Color) -> List[bb.Position]:
+        if color is Color.BLACK:
+            my_pieces = self.black
+            foe_pieces = self.white
+        else:
+            my_pieces = self.white
+            foe_pieces = self.black
+        moves_bb = 0x0
+        for dir_ in bb.DIRECTIONS:
+            candidates = foe_pieces & bb.shift(my_pieces, dir_)
+            while candidates != 0:
+                shifted = bb.shift(candidates, dir_)
+                moves_bb |= self.empty_cells() & shifted
+                candidates = foe_pieces & shifted
+        return bb.to_list(moves_bb)
 
     def _changed(self):
         """ Called when the state of the board changes. """
         for callback in self._change_callbacks:
-            callback(self._white, self._black)
+            callback(self._white, self._black, self._turn_player_color)
 
-    def onchange(self, func):
+    def onchange(self, func: Callable[int, int, Color]):
         """ Adds func to a list of callbacks to be called on state change. """
         self._change_callbacks.add(func)
         return func
@@ -58,8 +81,22 @@ class BoardState:
             self._black = value
             self._changed()
 
+    @property
+    def turn_player_color(self):
+        with self._turn_player_color_lock:
+            return self._turn_player_color
+
+    @turn_player_color.setter
+    def turn_player_color(self, value: Color):
+        with self._turn_player_color_lock:
+            self._turn_player_color = value
+            self._changed()
+
     def __eq__(self, other: BoardState):
-        return self.white == other.white and self.black == other.black
+        return \
+            self.white == other.white \
+            and self.black == other.black \
+            and self.turn_player_color == other.turn_player_color
 
     def __str__(self):
         def symbol_at(row: int, col: int) -> str:
@@ -77,25 +114,6 @@ class BoardState:
 class Board:
     def __init__(self, board_state: BoardState):
         self.board_state = board_state
-
-    def empty_cells(self) -> int:
-        return bb.not_(self.board_state.white | self.board_state.black)
-
-    def valid_moves_for(self, color: Color) -> List[bb.Position]:
-        if color is Color.BLACK:
-            my_pieces = self.board_state.black
-            foe_pieces = self.board_state.white
-        else:
-            my_pieces = self.board_state.white
-            foe_pieces = self.board_state.black
-        moves_bb = 0x0
-        for dir_ in bb.DIRECTIONS:
-            candidates = foe_pieces & bb.shift(my_pieces, dir_)
-            while candidates != 0:
-                shifted = bb.shift(candidates, dir_)
-                moves_bb |= self.empty_cells() & shifted
-                candidates = foe_pieces & shifted
-        return bb.to_list(moves_bb)
 
     def place(self, color: Color, pos: bb.Position):
         """ Place a piece of color `color` at position `pos`
@@ -119,7 +137,7 @@ class Board:
         Raises an IllegalMoveError if an illegal move was attempted
         """
         my_pieces = self.board_state.white if color is Color.WHITE else self.board_state.black
-        empty = self.empty_cells()
+        empty = self.board_state.empty_cells()
         class State:
             def __init__(self, dir_, init_bb=0x0):
                 self.bb = init_bb
@@ -161,7 +179,15 @@ class Board:
         return str(self.board_state)
 
 
-async def loop(interrupt: threading.Event, board_state: BoardState):
+def quit_():
+    _event_loop.stop()
+    _event_loop.close()
+
+
+async def loop(board_state: BoardState):
+    global _event_loop
+    _event_loop = asyncio.get_running_loop()
+
     # Game initialization
     _LOGGER.debug('Init game loop')
     _LOGGER.debug('Initial board\n%s', str(board_state))

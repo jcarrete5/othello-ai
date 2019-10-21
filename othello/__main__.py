@@ -8,7 +8,7 @@ _LOGGER = logging.getLogger('othello')
 INTERRUPT_EVENT = threading.Event()
 BOARD_STATE = game.BoardState(init_white=0x0000001008000000, init_black=0x0000000810000000)
 GAME_THREAD = threading.Thread(
-    target=lambda: asyncio.run(game.loop(INTERRUPT_EVENT, BOARD_STATE), debug=True),
+    target=lambda: asyncio.run(game.loop(BOARD_STATE), debug=True),
     name='game_thread')
 GAME_THREAD.start()
 
@@ -17,7 +17,7 @@ try:
 except KeyboardInterrupt:
     _LOGGER.info('Quitting application via KeyboardInterrupt...')
 finally:
-    INTERRUPT_EVENT.set()
+    game.quit_()
     GAME_THREAD.join()
     logging.shutdown()
 
