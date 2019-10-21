@@ -1,5 +1,9 @@
-__pycache__/
-*.egg-info/
-.venv/
+# VS Code
 .vscode/settings.json
+
+# Python
+.venv/
+*.egg-info/
+__pycache__/
+*.pyc
 .pytest_cache/
