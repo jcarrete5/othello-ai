@@ -66,4 +66,10 @@ def not_(bits: int) -> int:
     return ~bits & ALL_
 
 def to_list(bits: int) -> List[Position]:
-    pass
+    positions = []
+    for r in range(8):
+        for c in range(8):
+            mask = pos_mask(r, c)
+            if bits & mask > 0:
+                positions.append(Position(r, c))
+    return positions
