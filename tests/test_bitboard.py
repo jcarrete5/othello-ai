@@ -74,3 +74,11 @@ def test_dilate():
 
 def test_not():
     assert bb.not_(0x5555555555555555) == 0xaaaaaaaaaaaaaaaa
+
+def test_to_list():
+    assert bb.to_list(0x0100010001000100) == [
+        bb.Position(0, 7),
+        bb.Position(2, 7),
+        bb.Position(4, 7),
+        bb.Position(6, 7)
+    ]
