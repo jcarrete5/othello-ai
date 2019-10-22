@@ -3,17 +3,12 @@ import logging
 import re
 import threading
 import asyncio
-import time
 import enum
-from typing import TYPE_CHECKING, List, Callable
+from typing import List, Callable
 from othello import bitboard as bb
-from othello.player import Color
-
-if TYPE_CHECKING:
-    from othello.player import Player
+from othello.player import Color, Player
 
 _LOGGER = logging.getLogger(__name__)
-_event_loop = None
 
 
 class GameType(enum.Enum):
@@ -39,8 +34,9 @@ class BoardState:
     def empty_cells(self) -> int:
         return bb.not_(self.white | self.black)
 
-    def valid_moves_for(self, color: Color) -> List[bb.Position]:
-        if color is Color.BLACK:
+    def valid_moves(self) -> List[bb.Position]:
+        """ Return a list of positions of valid moves for the turn player. """
+        if self._turn_player_color is Color.BLACK:
             my_pieces = self.black
             foe_pieces = self.white
         else:
@@ -64,6 +60,9 @@ class BoardState:
         """ Adds func to a list of callbacks to be called on state change. """
         self._change_callbacks.add(func)
         return func
+
+    def remove_onchange(self, func: Callable[int, int, Color]):
+        self._change_callbacks.remove(func)
 
     @property
     def white(self) -> int:
@@ -188,18 +187,30 @@ class Board:
 class Game(threading.Thread):
     game_counter = 0
 
-    def __init__(self, board_state: BoardState):
+    def __init__(self, board_state: BoardState, my_color: Color, type_: GameType):
         super().__init__(name=f'GameThread ({Game.game_counter})')
         Game.game_counter += 1
         self.board_state = board_state
+        self.my_player = Player(my_color)
         self._board = Board(self.board_state)
         self._interrupted = threading.Event()
+        self._type = type_
 
     def interrupt(self):
         self._interrupted.set()
 
+    async def loop(self):
+        # Set opponent color to be opposite mine
+        opponent = Player(list(set(Color).remove(self.my_player.color))[0])
+        turn_player = self.my_player if self.my_player.color is Color.BLACK else opponent
+        while not self._interrupted.is_set():
+            move = await turn_player.move
+            self._board.place(turn_player.color, move)
+            # Change to other player
+            turn_player = self.my_player if turn_player is opponent else opponent
+            # Change board state to reflect new player
+
     def run(self):
         _LOGGER.info('New game started')
-        while not self._interrupted.is_set():
-            ...
+        asyncio.run(self.loop(), debug=True)
         _LOGGER.info('Game ended')

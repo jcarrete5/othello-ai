@@ -19,8 +19,8 @@ class Color(enum.Enum):
 class Player:
     def __init__(self, color: Color):
         self._color = color
-        loop = asyncio.get_running_loop()
-        self._move = loop.create_future()
+        self._loop = asyncio.get_running_loop()
+        self._move = self._loop.create_future()
 
     @property
     def color(self):
@@ -33,14 +33,15 @@ class Player:
 
     @move.setter
     def move(self, value: Position):
-        if self._move.done():
-            del self._move
-        self._move.set_result(value)
+        def callback():
+            if self._move.done():
+                del self._move
+            self._move.set_result(value)
+        self._loop.call_soon_threadsafe(callback)
 
     @move.deleter
     def move(self):
-        loop = asyncio.get_running_loop()
-        self._move = loop.create_future()
+        self._move = self._loop.create_future()
 
     def __repr__(self):
         return f'Player({self._color})'

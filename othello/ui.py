@@ -1,12 +1,12 @@
 from __future__ import annotations
 import tkinter as tk
+# pylint: disable=unused-import
 import tkinter.messagebox
 import logging
 from random import choice as chooseFrom
-from typing import TYPE_CHECKING
 from othello import bitboard as bb
 from othello.game import Game, GameType, BoardState
-from othello.player import Color
+from othello.player import Color, Player
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -44,11 +44,13 @@ class BoardView(tk.Canvas):
     @board_state.setter
     def board_state(self, value: BoardState):
         self._board_state = value
+        self._board_state.onchange(lambda w, b, c: self.after(0, self._redraw()))
         self.after(0, self._redraw)
 
     @staticmethod
     def on_click(event):
         _LOGGER.debug(event)
+        # TODO play the move i.e. _game.my_player.move = ...
 
     def _redraw(self):
         if self.board_state is not None:
@@ -142,12 +144,12 @@ class NewGameDialog(tk.Toplevel):
         state = BoardState(
             init_white=0x0000001008000000,
             init_black=0x0000000810000000,
-            turn_player_color=self.color_var.get() or chooseFrom(list(Color))
+            turn_player_color=Color.BLACK
         )
         self.board_view.board_state = state
         if _game:
             _game.interrupt()
-        _game = Game(state)
+        _game = Game(state, self.color_var.get() or chooseFrom(list(Color)), self.foe_var.get())
         _game.start()
         self.destroy()
 
