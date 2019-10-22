@@ -3,6 +3,8 @@ import logging
 import re
 import threading
 import asyncio
+import time
+import enum
 from typing import TYPE_CHECKING, List, Callable
 from othello import bitboard as bb
 from othello.player import Color
@@ -11,8 +13,12 @@ if TYPE_CHECKING:
     from othello.player import Player
 
 _LOGGER = logging.getLogger(__name__)
-# pylint: disable=invalid-name
 _event_loop = None
+
+
+class GameType(enum.Enum):
+    COMPUTER = enum.auto()
+    ONLINE = enum.auto()
 
 
 class IllegalMoveError(Exception):
@@ -21,14 +27,14 @@ class IllegalMoveError(Exception):
 
 class BoardState:
     """ Thread-safe way to access board state. """
-    def __init__(self, init_white=0, init_black=0):
+    def __init__(self, init_white=0, init_black=0, turn_player_color=Color.BLACK):
         self._white_lock = threading.Lock()
         self._white = init_white
         self._black_lock = threading.Lock()
         self._black = init_black
         self._change_callbacks = set()
         self._turn_player_color_lock = threading.Lock()
-        self._turn_player_color = Color.BLACK
+        self._turn_player_color = turn_player_color
 
     def empty_cells(self) -> int:
         return bb.not_(self.white | self.black)
@@ -179,29 +185,21 @@ class Board:
         return str(self.board_state)
 
 
-def quit_():
-    _event_loop.stop()
-    _event_loop.close()
+class Game(threading.Thread):
+    game_counter = 0
 
+    def __init__(self, board_state: BoardState):
+        super().__init__(name=f'GameThread ({Game.game_counter})')
+        Game.game_counter += 1
+        self.board_state = board_state
+        self._board = Board(self.board_state)
+        self._interrupted = threading.Event()
 
-async def loop(board_state: BoardState):
-    global _event_loop
-    _event_loop = asyncio.get_running_loop()
+    def interrupt(self):
+        self._interrupted.set()
 
-    # Game initialization
-    _LOGGER.debug('Init game loop')
-    _LOGGER.debug('Initial board\n%s', str(board_state))
-    # turn_player = user
-
-    # while not interrupt.is_set():
-    #     _LOGGER.info('Waiting for %s to make a move...', str(turn_player))
-    #     if turn_player is ai_player:
-    #         ai_player.turn.set()
-    #     else:
-    #         ai_player.turn.clear()
-    #     move = await turn_player.move
-    #     board.place(turn_player.color, move)
-    #     _LOGGER.info('%s played %s', str(turn_player), move)
-    #     # Toggle turn_player
-    #     turn_player = user if turn_player is ai_player else ai_player
-    _LOGGER.info('Quit game loop')
+    def run(self):
+        _LOGGER.info('New game started')
+        while not self._interrupted.is_set():
+            ...
+        _LOGGER.info('Game ended')
