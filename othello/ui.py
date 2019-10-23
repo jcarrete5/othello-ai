@@ -17,25 +17,25 @@ _game = None
 class BoardView(tk.Canvas):
     def __init__(self, master):
         self._cell_size = 40
-        self._border_width = 3
+        self._border_width = 0
         self._grid_line_width = 1
         super().__init__(
             master,
-            width=self._cell_size * 8 + self._grid_line_width * 7 - 1,
-            height=self._cell_size * 8 + self._grid_line_width * 7 - 1,
+            width=self._cell_size * 8 + self._grid_line_width * 7,
+            height=self._cell_size * 8 + self._grid_line_width * 7,
             borderwidth=f'{self._border_width}',
             highlightthickness=0,
             relief=tk.RAISED,
             bg='#000'
         )
         self.pack()
-        self.bind('<Button-1>', BoardView.on_click)
+        self.bind('<Button-1>', self.onclick)
 
         self._board_state = None
         _LOGGER.debug('Canvas dim (%d, %d)',
                       self.winfo_reqwidth(),
                       self.winfo_reqheight())
-        self._redraw()
+        self._redraw(0, 0)
 
     @property
     def board_state(self) -> BoardState:
@@ -44,24 +44,31 @@ class BoardView(tk.Canvas):
     @board_state.setter
     def board_state(self, value: BoardState):
         self._board_state = value
-        self._board_state.onchange(lambda w, b, c: self.after(0, self._redraw()))
-        self.after(0, self._redraw)
+        self._board_state.onchange(lambda w, b: self.after(0, self._redraw(w, b)))
+        self.after(0, lambda: self._redraw(self.board_state.white, self.board_state.black))
 
-    @staticmethod
-    def on_click(event):
-        _LOGGER.debug(event)
-        # TODO play the move i.e. _game.my_player.move = ...
+    def onclick(self, event):
+        _LOGGER.debug('BoardView clicked %s', event)
+        if _game is None:
+            return
+        col = (event.x - self._border_width) / self.winfo_reqwidth() * 8
+        row = (event.y - self._border_width) / self.winfo_reqheight() * 8
+        _LOGGER.debug('(row=%f, col=%f)', row, col)
+        _LOGGER.debug('(row=%d, col=%d)', row, col)
+        if 0 <= col < 8 and 0 <= row < 8:
+            move = bb.Position(int(row), int(col))
+            if move in self.board_state.valid_moves():
+                _game.my_player.move = move
+            else:
+                _LOGGER.info('%s played an invalid move', _game.my_player)
 
-    def _redraw(self):
-        if self.board_state is not None:
-            white = self.board_state.white
-            black = self.board_state.black
-            _LOGGER.debug('Redrawing Board with white=%0#16x, black=%0#16x', white, black)
+    def _redraw(self, white: int, black: int):
+        _LOGGER.debug('Redrawing Board with white=%0#16x, black=%0#16x', white, black)
         self.delete(tk.ALL)
         for r in range(8):
             for c in range(8):
-                x_off = c * self._cell_size + c * self._grid_line_width + self._border_width - 1
-                y_off = r * self._cell_size + r * self._grid_line_width + self._border_width - 1
+                x_off = c * self._cell_size + c * self._grid_line_width + self._border_width
+                y_off = r * self._cell_size + r * self._grid_line_width + self._border_width
                 # Draw green empty cell
                 self.create_rectangle(
                     x_off,
@@ -100,27 +107,43 @@ class NewGameDialog(tk.Toplevel):
 
         frame = tk.Frame(self)
         frame.pack_configure(expand=True)
-        self.foe_var = tk.Variable(frame, GameType.COMPUTER)
-        self.color_var = tk.Variable(frame, Color.BLACK)
+        self.game_type = tk.StringVar(frame, GameType.COMPUTER.name)
+        self.color_var = tk.StringVar(frame, Color.BLACK.name)
         oppenent_frame = tk.LabelFrame(frame, text='Opponent')
         oppenent_frame.grid(row=0, column=0, sticky='n')
-        tk.Radiobutton(oppenent_frame, text='Computer', variable=self.foe_var, value=GameType.COMPUTER).grid(
-            row=1, column=0, sticky='w'
-        )
-        tk.Radiobutton(oppenent_frame, text='Online', variable=self.foe_var, value=GameType.ONLINE, state=tk.DISABLED).grid(
-            row=2, column=0, sticky='w'
-        )
+        tk.Radiobutton(
+            oppenent_frame,
+            text='Computer',
+            variable=self.game_type,
+            value=GameType.COMPUTER.name
+        ).grid(row=1, column=0, sticky='w')
+        tk.Radiobutton(
+            oppenent_frame,
+            text='Online',
+            variable=self.game_type,
+            value=GameType.ONLINE.name,
+            state=tk.DISABLED
+        ).grid(row=2, column=0, sticky='w')
         color_frame = tk.LabelFrame(frame, text='Color')
         color_frame.grid(row=0, column=1, sticky='n')
-        tk.Radiobutton(color_frame, text='Black', variable=self.color_var, value=Color.BLACK).grid(
-            row=1, column=1, sticky='w'
-        )
-        tk.Radiobutton(color_frame, text='White', variable=self.color_var, value=Color.WHITE).grid(
-            row=2, column=1, sticky='w'
-        )
-        tk.Radiobutton(color_frame, text='Random', variable=self.color_var, value=None).grid(
-            row=3, column=1, sticky='w'
-        )
+        tk.Radiobutton(
+            color_frame,
+            text='Black',
+            variable=self.color_var,
+            value=Color.BLACK.name
+        ).grid(row=1, column=1, sticky='w')
+        tk.Radiobutton(
+            color_frame,
+            text='White',
+            variable=self.color_var,
+            value=Color.WHITE.name
+        ).grid(row=2, column=1, sticky='w')
+        tk.Radiobutton(
+            color_frame,
+            text='Random',
+            variable=self.color_var,
+            value=None
+        ).grid(row=3, column=1, sticky='w')
         tk.Button(frame, text='Cancel', command=self.cancel).grid(row=1, column=0)
         tk.Button(frame, text='Start', command=self.submit).grid(row=1, column=1)
         self.bind('<Escape>', lambda e: self.cancel())
@@ -137,7 +160,10 @@ class NewGameDialog(tk.Toplevel):
         global _game
 
         if _game is not None:
-            proceed = tk.messagebox.askokcancel('Start New Game', 'Another game is already in progress. Proceed?')
+            proceed = tk.messagebox.askokcancel(
+                title='Start New Game',
+                message='Another game is already in progress. Proceed?'
+            )
             if not proceed:
                 self.destroy()
 
@@ -149,7 +175,11 @@ class NewGameDialog(tk.Toplevel):
         self.board_view.board_state = state
         if _game:
             _game.interrupt()
-        _game = Game(state, self.color_var.get() or chooseFrom(list(Color)), self.foe_var.get())
+        _game = Game(
+            state,
+            Color[self.color_var.get()] or chooseFrom(list(Color)),
+            GameType[self.game_type.get()]
+        )
         _game.start()
         self.destroy()
 

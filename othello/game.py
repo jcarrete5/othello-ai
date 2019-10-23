@@ -6,9 +6,10 @@ import asyncio
 import enum
 from typing import List, Callable
 from othello import bitboard as bb
-from othello.player import Color, Player
+from othello.player import Color, Player, AIPlayer
 
 _LOGGER = logging.getLogger(__name__)
+_LOGGER.setLevel(logging.INFO)
 
 
 class GameType(enum.Enum):
@@ -23,12 +24,12 @@ class IllegalMoveError(Exception):
 class BoardState:
     """ Thread-safe way to access board state. """
     def __init__(self, init_white=0, init_black=0, turn_player_color=Color.BLACK):
-        self._white_lock = threading.Lock()
+        self._white_lock = threading.RLock()
         self._white = init_white
-        self._black_lock = threading.Lock()
+        self._black_lock = threading.RLock()
         self._black = init_black
         self._change_callbacks = set()
-        self._turn_player_color_lock = threading.Lock()
+        self._turn_player_color_lock = threading.RLock()
         self._turn_player_color = turn_player_color
 
     def empty_cells(self) -> int:
@@ -54,48 +55,67 @@ class BoardState:
     def _changed(self):
         """ Called when the state of the board changes. """
         for callback in self._change_callbacks:
-            callback(self._white, self._black, self._turn_player_color)
+            callback(self.white, self.black)
 
-    def onchange(self, func: Callable[int, int, Color]):
-        """ Adds func to a list of callbacks to be called on state change. """
+    def onchange(self, func: Callable[int, int]):
+        """ Adds func to a list of callbacks to be called on state change.
+
+        Not called when the turn_player_color changes.
+        """
         self._change_callbacks.add(func)
         return func
 
-    def remove_onchange(self, func: Callable[int, int, Color]):
+    def remove_onchange(self, func: Callable[int, int]):
         self._change_callbacks.remove(func)
+
+    def reset(self):
+        self.white = 0
+        self.black = 0
+        self.turn_player_color = Color.BLACK
 
     @property
     def white(self) -> int:
+        _LOGGER.debug('Waiting for white lock')
         with self._white_lock:
+            _LOGGER.debug('Acquire white lock')
             return self._white
 
     @white.setter
     def white(self, value: int):
+        _LOGGER.debug('Waiting for white lock')
         with self._white_lock:
+            _LOGGER.debug('Acquire white lock')
             self._white = value
-            self._changed()
+        self._changed()
 
     @property
     def black(self) -> int:
+        _LOGGER.debug('Waiting for black lock')
         with self._black_lock:
+            _LOGGER.debug('Acquire black lock')
             return self._black
 
     @black.setter
     def black(self, value: int):
+        _LOGGER.debug('Waiting for black lock')
         with self._black_lock:
+            _LOGGER.debug('Acquire black lock')
             self._black = value
-            self._changed()
+        self._changed()
 
     @property
     def turn_player_color(self):
+        _LOGGER.debug('Waiting for turn player color lock')
         with self._turn_player_color_lock:
+            _LOGGER.debug('Acquire turn player color lock')
             return self._turn_player_color
 
     @turn_player_color.setter
     def turn_player_color(self, value: Color):
+        _LOGGER.debug('Waiting for turn player color lock')
         with self._turn_player_color_lock:
+            _LOGGER.debug('Acquire turn player color lock')
             self._turn_player_color = value
-            self._changed()
 
     def __eq__(self, other: BoardState):
         return \
@@ -191,26 +211,56 @@ class Game(threading.Thread):
         super().__init__(name=f'GameThread ({Game.game_counter})')
         Game.game_counter += 1
         self.board_state = board_state
-        self.my_player = Player(my_color)
+        self.my_player = None
+        self._loop = None
+        self._my_color = my_color
         self._board = Board(self.board_state)
-        self._interrupted = threading.Event()
         self._type = type_
 
     def interrupt(self):
-        self._interrupted.set()
+        if self._loop and self._loop.is_running():
+            self._loop.call_soon_threadsafe(self._loop.stop)
+        else:
+            _LOGGER.warning('Game event loop was interrupted before it was running')
 
     async def loop(self):
+        self._loop = asyncio.get_running_loop()
+        # def handler(loop, ctx):
+        #     _LOGGER.error(ctx.message)
+        #     loop.stop()
+        # self._loop.set_exception_handler(handler)
+
+        self.my_player = Player(self._my_color)
         # Set opponent color to be opposite mine
-        opponent = Player(list(set(Color).remove(self.my_player.color))[0])
+        opp_color = list(Color)[0] if list(Color)[0] is not self.my_player.color else list(Color)[1]
+        if self._type is GameType.COMPUTER:
+            opponent = AIPlayer(opp_color, self.board_state)
+        else:
+            raise RuntimeError(f'{self._type} is not implemented')
+
         turn_player = self.my_player if self.my_player.color is Color.BLACK else opponent
-        while not self._interrupted.is_set():
+        while self._loop.is_running():
+            _LOGGER.info('Waiting for %s to make a move', turn_player)
             move = await turn_player.move
-            self._board.place(turn_player.color, move)
+            if move is not None:
+                _LOGGER.info('%s played %s', turn_player, move)
+                self._board.place(turn_player.color, move)
+            else:
+                _LOGGER.info('%s passed their move', str(turn_player))
+
+            # Artificial delay so moves don't appear instantly
+            await asyncio.sleep(0.4)
+
             # Change to other player
             turn_player = self.my_player if turn_player is opponent else opponent
-            # Change board state to reflect new player
+            self.board_state.turn_player_color = turn_player.color
 
     def run(self):
         _LOGGER.info('New game started')
-        asyncio.run(self.loop(), debug=True)
-        _LOGGER.info('Game ended')
+        try:
+            asyncio.run(self.loop())
+        except RuntimeError as err:
+            _LOGGER.warning(err)
+            self.board_state.reset()
+        finally:
+            _LOGGER.info('Game ended')
