@@ -1,9 +1,11 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 import asyncio
 import enum
+from othello import ai
 
 if TYPE_CHECKING:
+    from othello.game import BoardState
     from othello.bitboard import Position
 
 
@@ -29,13 +31,15 @@ class Player:
     @property
     async def move(self) -> Position:
         """ The next move this player intends to make. """
-        return await self._move
+        move = await self._move
+        del self.move
+        return move
 
     @move.setter
     def move(self, value: Position):
         def callback():
             if self._move.done():
-                del self._move
+                raise RuntimeError('Attempt to set %s move but it has already been set')
             self._move.set_result(value)
         self._loop.call_soon_threadsafe(callback)
 
@@ -45,3 +49,15 @@ class Player:
 
     def __repr__(self):
         return f'Player({self._color})'
+
+
+class AIPlayer(Player):
+    def __init__(self, color: Color, state: BoardState, strat: Callable[[BoardState], Position] = ai.random):
+        super().__init__(color)
+        self._strat = strat
+        self._state = state
+
+    # pylint: disable=no-member,invalid-overridden-method
+    @Player.move.getter
+    async def move(self):
+        return self._strat(self._state)
