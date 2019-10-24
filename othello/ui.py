@@ -2,12 +2,15 @@ from __future__ import annotations
 import tkinter as tk
 import tkinter.messagebox  # pylint: disable=unused-import
 import logging
+from queue import Queue, Empty as QueueEmpty
 from random import choice as chooseFrom
 from othello import bitboard as bb
-from othello.game import Game, GameType, BoardState
+from othello.game import Game, GameType, EventName, BoardState
 from othello.player import Color
 
 
+EVENT_QUEUE = Queue()
+_EVENT_SUBSCRIPTIONS = dict()
 _LOGGER = logging.getLogger(__name__)
 _game = None  # pylint: disable=invalid-name
 
@@ -32,17 +35,8 @@ class BoardView(tk.Canvas):
         _LOGGER.debug('Canvas dim (%d, %d)',
                       self.winfo_reqwidth(),
                       self.winfo_reqheight())
+        _subscribe(EventName.BOARD_CHANGED, self._redraw)
         self._redraw(0, 0)
-
-    @property
-    def board_state(self) -> BoardState:
-        return self._board_state
-
-    @board_state.setter
-    def board_state(self, value: BoardState):
-        self._board_state = value
-        self._board_state.onchange(lambda w, b: self.after(0, self._redraw(w, b)))
-        self.after(0, lambda: self._redraw(self.board_state.white, self.board_state.black))
 
     def onclick(self, event):
         _LOGGER.debug('BoardView clicked %s', event)
@@ -54,7 +48,7 @@ class BoardView(tk.Canvas):
         _LOGGER.debug('(row=%d, col=%d)', row, col)
         if 0 <= col < 8 and 0 <= row < 8:
             move = bb.Position(int(row), int(col))
-            if move in self.board_state.valid_moves():
+            if move in _game.board_state.valid_moves():
                 _game.my_player.move = move
             else:
                 _LOGGER.info('%s played an invalid move', _game.my_player)
@@ -75,22 +69,21 @@ class BoardView(tk.Canvas):
                     fill='#060'
                 )
 
-                if self.board_state is not None:
-                    # Draw piece in cell
-                    mask = bb.pos_mask(r, c)
-                    inset = 5
-                    fill_color = None
-                    if white & mask != 0:
-                        fill_color = '#fff'
-                    elif black & mask != 0:
-                        fill_color = '#000'
-                    if fill_color:
-                        self.create_oval(
-                            x_off + inset,
-                            y_off + inset,
-                            x_off + self._cell_size - inset,
-                            y_off + self._cell_size - inset,
-                            fill=fill_color)
+                # Draw piece in cell
+                mask = bb.pos_mask(r, c)
+                inset = 5
+                fill_color = None
+                if white & mask != 0:
+                    fill_color = '#fff'
+                elif black & mask != 0:
+                    fill_color = '#000'
+                if fill_color:
+                    self.create_oval(
+                        x_off + inset,
+                        y_off + inset,
+                        x_off + self._cell_size - inset,
+                        y_off + self._cell_size - inset,
+                        fill=fill_color)
 
 
 class NewGameDialog(tk.Toplevel):
@@ -154,7 +147,7 @@ class NewGameDialog(tk.Toplevel):
 
     def submit(self):
         _LOGGER.debug('Submit')
-        global _game
+        global _game  # pylint: disable=invalid-name
 
         if _game is not None:
             proceed = tk.messagebox.askokcancel(
@@ -174,18 +167,40 @@ class NewGameDialog(tk.Toplevel):
             _game.interrupt()
         _game = Game(
             state,
-            Color[self.color_var.get()] or chooseFrom(list(Color)),
-            GameType[self.game_type.get()]
+            self.color_var.get() and Color[self.color_var.get()] or chooseFrom(list(Color)),
+            GameType[self.game_type.get()],
+            EVENT_QUEUE
         )
         _game.start()
         self.destroy()
 
 
-def init_widgets(root: tk.Tk):
+def _subscribe(name: EventName, callback):
+    if name in _EVENT_SUBSCRIPTIONS:
+        _EVENT_SUBSCRIPTIONS[name].append(callback)
+    else:
+        _EVENT_SUBSCRIPTIONS[name] = [callback]
+
+
+def _poll_queue(root: tk.Tk):
+    try:
+        event_name, *args = EVENT_QUEUE.get_nowait()
+    except QueueEmpty:
+        pass
+    else:
+        if event_name in _EVENT_SUBSCRIPTIONS:
+            for callback in _EVENT_SUBSCRIPTIONS[event_name]:
+                callback(*args)
+        else:
+            _LOGGER.warning('Unhandled event %r with args %s', event_name, args)
+    root.after(100, _poll_queue, root)
+
+
+def _init_widgets(root: tk.Tk):
     root.title('Othello')
 
     main = tk.Frame(root)
-    main.pack_configure(expand=True, fill='both')
+    main.pack_configure(expand=True)
     board_view = BoardView(main)
 
     menubar = tk.Menu(root)
@@ -197,11 +212,14 @@ def init_widgets(root: tk.Tk):
 
 def loop():
     _LOGGER.info('Init ui loop')
-    root = tk.Tk()
-    init_widgets(root)
-    root.mainloop()
-    global _game
-    if _game is not None:
-        _game.interrupt()
-        _game.join()
-    _LOGGER.info('Quit ui loop')
+    try:
+        root = tk.Tk()
+        _init_widgets(root)
+        root.after(100, _poll_queue, root)
+        root.mainloop()
+        global _game  # pylint: disable=invalid-name
+        if _game is not None:
+            _game.interrupt()
+            _game.join()
+    finally:
+        _LOGGER.info('Quit ui loop')

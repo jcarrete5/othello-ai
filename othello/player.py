@@ -39,7 +39,7 @@ class Player:
     def move(self, value: Position):
         def callback():
             if self._move.done():
-                raise RuntimeError('Attempt to set %s move but it has already been set')
+                raise RuntimeError(f'Attempt to set {self} move but it has already been set')
             self._move.set_result(value)
         self._loop.call_soon_threadsafe(callback)
 
