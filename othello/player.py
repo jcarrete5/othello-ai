@@ -57,7 +57,6 @@ class AIPlayer(Player):
         self._strat = strat
         self._state = state
 
-    # pylint: disable=no-member,invalid-overridden-method
-    @Player.move.getter
-    async def move(self):
+    @Player.move.getter  # pylint: disable=no-member
+    async def move(self):  # pylint: disable=invalid-overridden-method
         return self._strat(self._state)

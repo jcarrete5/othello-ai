@@ -1,17 +1,15 @@
 from __future__ import annotations
 import tkinter as tk
-# pylint: disable=unused-import
-import tkinter.messagebox
+import tkinter.messagebox  # pylint: disable=unused-import
 import logging
 from random import choice as chooseFrom
 from othello import bitboard as bb
 from othello.game import Game, GameType, BoardState
-from othello.player import Color, Player
+from othello.player import Color
 
 
 _LOGGER = logging.getLogger(__name__)
-# pylint: disable=invalid-name
-_game = None
+_game = None  # pylint: disable=invalid-name
 
 
 class BoardView(tk.Canvas):
@@ -25,7 +23,6 @@ class BoardView(tk.Canvas):
             height=self._cell_size * 8 + self._grid_line_width * 7,
             borderwidth=f'{self._border_width}',
             highlightthickness=0,
-            relief=tk.RAISED,
             bg='#000'
         )
         self.pack()
