@@ -5,8 +5,8 @@ import enum
 from . import ai
 
 if TYPE_CHECKING:
-    from othello.game import BoardState
-    from othello.bitboard import Position
+    from .game import BoardState
+    from .bitboard import Position
 
 
 class Color(enum.Enum):
