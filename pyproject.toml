@@ -3,7 +3,7 @@ name = "othello-ai"
 packages = [
     {include = "othelloai"}
 ]
-version = "0.1.0"
+version = "0.1.1"
 description = "Othello game engine"
 authors = ["Jason R. Carrete <jasoncarrete5@gmail.com>"]
 license = "MIT"
