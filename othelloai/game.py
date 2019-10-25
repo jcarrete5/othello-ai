@@ -12,7 +12,6 @@ if TYPE_CHECKING:
     from queue import Queue
 
 _LOGGER = logging.getLogger(__name__)
-_LOGGER.setLevel(logging.INFO)
 
 
 class EventName(enum.Enum):
