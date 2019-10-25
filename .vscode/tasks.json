@@ -11,15 +11,6 @@
                 "kind": "build",
                 "isDefault": true
             }
-        },
-        {
-            "label": "publish",
-            "type": "shell",
-            "command": "poetry ",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            }
         }
     ]
 }
