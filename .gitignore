@@ -1,6 +1,9 @@
 # VS Code
 .vscode/settings.json
 
+# Build/
+dist/
+
 # Python
 .venv/
 *.egg-info/
