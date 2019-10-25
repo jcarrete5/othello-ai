@@ -1,5 +1,5 @@
 import logging
-from othello import ui
+from othelloai import ui
 
 _LOGGER = logging.getLogger('othello')
 

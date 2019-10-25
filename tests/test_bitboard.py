@@ -1,4 +1,4 @@
-from othello import bitboard as bb
+from othelloai import bitboard as bb
 
 def test_directions():
     needed_directions = frozenset({'n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'})

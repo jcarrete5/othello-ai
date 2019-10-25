@@ -5,8 +5,8 @@ import threading
 import asyncio
 import enum
 from typing import TYPE_CHECKING, List
-from othello import bitboard as bb
-from othello.player import Color, Player, AIPlayer
+from . import bitboard as bb
+from .player import Color, Player, AIPlayer
 
 if TYPE_CHECKING:
     from queue import Queue

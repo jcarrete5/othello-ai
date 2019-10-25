@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable
 import asyncio
 import enum
-from othello import ai
+from . import ai
 
 if TYPE_CHECKING:
     from othello.game import BoardState

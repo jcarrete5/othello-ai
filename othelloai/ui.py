@@ -4,9 +4,9 @@ import tkinter.messagebox  # pylint: disable=unused-import
 import logging
 from queue import Queue, Empty as QueueEmpty
 from random import choice as chooseFrom
-from othello import bitboard as bb
-from othello.game import Game, GameType, EventName, BoardState
-from othello.player import Color
+from . import bitboard as bb
+from .game import Game, GameType, EventName, BoardState
+from .player import Color
 
 
 EVENT_QUEUE = Queue()

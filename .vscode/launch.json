@@ -8,10 +8,10 @@
             "program": "${file}",
         },
         {
-            "name": "Python: othello",
+            "name": "Python: othelloai",
             "type": "python",
             "request": "launch",
-            "module": "othello"
+            "module": "othelloai"
         }
     ]
 }
