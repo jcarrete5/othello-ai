@@ -58,14 +58,18 @@ def on_edge(bits: int) -> str:
     return ''.join(edges)
 
 def dilate(bits: int, dir_: str, times: int = 1) -> int:
+    """ Set `times` bits in direction `dir_` """
     for _ in range(times):
         bits |= shift(bits, dir_)
     return bits
 
 def not_(bits: int) -> int:
+    """ Bitwise not of the bitboard. """
+    # The `& ALL_` is necessary so python doesn't treat bits as 2's compliment
     return ~bits & ALL_
 
 def to_list(bits: int) -> List[Position]:
+    """ Return a list of positions corresponding to the bits set in `bits`. """
     positions = []
     for r in range(8):
         for c in range(8):

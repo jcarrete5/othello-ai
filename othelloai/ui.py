@@ -1,3 +1,6 @@
+"""
+UI for the othello application.
+"""
 from __future__ import annotations
 import tkinter as tk
 import tkinter.messagebox  # pylint: disable=unused-import
@@ -16,6 +19,7 @@ _game = None  # pylint: disable=invalid-name
 
 
 class BoardView(tk.Canvas):
+    """ Represents the state of the board graphically. """
     def __init__(self, master):
         self._cell_size = 40
         self._border_width = 0
@@ -87,6 +91,7 @@ class BoardView(tk.Canvas):
 
 
 class NewGameDialog(tk.Toplevel):
+    """ Modal dialog window for creating new games. """
     def __init__(self, parent, board_view: BoardView):
         super().__init__(parent)
         self.transient(parent)
@@ -179,6 +184,7 @@ class NewGameDialog(tk.Toplevel):
 
 
 def _subscribe(name: EventName, callback):
+    """ Add a callback for event name `name`. """
     if name in _EVENT_SUBSCRIPTIONS:
         _EVENT_SUBSCRIPTIONS[name].append(callback)
     else:
@@ -186,6 +192,7 @@ def _subscribe(name: EventName, callback):
 
 
 def _poll_queue(root: tk.Tk):
+    """ Periodically poll the event queue for messages. """
     try:
         event_name, *args = EVENT_QUEUE.get_nowait()
     except QueueEmpty:

@@ -1,3 +1,6 @@
+"""
+Strategies and implementation details for the AI.
+"""
 from __future__ import annotations
 from random import choice as chooseFrom
 from typing import TYPE_CHECKING

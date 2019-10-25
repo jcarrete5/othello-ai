@@ -1,3 +1,6 @@
+"""
+Core game logic
+"""
 from __future__ import annotations
 import logging
 import re
@@ -16,7 +19,6 @@ _LOGGER = logging.getLogger(__name__)
 
 class EventName(enum.Enum):
     BOARD_CHANGED = enum.auto()
-    ERROR = enum.auto()
 
 
 class GameType(enum.Enum):
@@ -35,6 +37,7 @@ class BoardState:
         self.turn_player_color = turn_player_color
 
     def empty_cells(self) -> int:
+        """ Return a bitboard representing empty cells. """
         return bb.not_(self.white | self.black)
 
     def valid_moves(self) -> List[bb.Position]:
@@ -79,6 +82,7 @@ class BoardState:
 
 
 class Board:
+    """ Logic for placing moves and manipulating board state. """
     def __init__(self, board_state: BoardState):
         self.board_state = board_state
 
@@ -147,6 +151,12 @@ class Board:
 
 
 class Game(threading.Thread):
+    """ Core game logic loop.
+
+    Can be started as a thread or used in an asyncio event loop directly.
+    """
+
+    # Used to differentiate different game threads in logs
     game_counter = 0
 
     def __init__(self,
@@ -165,6 +175,7 @@ class Game(threading.Thread):
         self._out_queue = out_queue
 
     def interrupt(self):
+        """ Stop the game loop. Thread-safe. """
         if self._loop and self._loop.is_running():
             self._loop.call_soon_threadsafe(self._loop.stop)
         else:

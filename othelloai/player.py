@@ -11,14 +11,14 @@ if TYPE_CHECKING:
 
 class Color(enum.Enum):
     """
-    Represents color of pieces.
-    There can only be two colors.
+    Represents color of pieces. There can only be two colors.
     """
     BLACK = enum.auto()
     WHITE = enum.auto()
 
 
 class Player:
+    """ Interface for playing and retrieving moves asynchronously. """
     def __init__(self, color: Color):
         self._color = color
         self._loop = asyncio.get_running_loop()
