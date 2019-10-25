@@ -8,7 +8,7 @@ description = "Othello game engine"
 authors = ["Jason R. Carrete <jasoncarrete5@gmail.com>"]
 license = "MIT"
 readme = "README.md"
-repository = "https://github.com/jcarrete5/othello"
+repository = "https://github.com/jcarrete5/othello-ai"
 keywords = ["othello", "ai"]
 
 [tool.poetry.dependencies]
