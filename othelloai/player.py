@@ -52,11 +52,11 @@ class Player:
 
 
 class AIPlayer(Player):
-    def __init__(self, color: Color, state: BoardState, strat: Callable[[BoardState], Position] = ai.random):
+    def __init__(self, color: Color, state: BoardState, strat: Callable[[BoardState], Position]):
         super().__init__(color)
         self._strat = strat
         self._state = state
 
     @Player.move.getter  # pylint: disable=no-member
     async def move(self):  # pylint: disable=invalid-overridden-method
-        return self._strat(self._state)
+        return await self._strat(self._state)

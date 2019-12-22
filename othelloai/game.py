@@ -8,7 +8,7 @@ import threading
 import asyncio
 import enum
 from typing import TYPE_CHECKING, List
-from . import bitboard as bb
+from . import bitboard as bb, ai
 from .player import Color, Player, AIPlayer
 
 if TYPE_CHECKING:
@@ -194,7 +194,7 @@ class Game(threading.Thread):
         # Set opponent color to be opposite mine
         opp_color = list(Color)[0] if list(Color)[0] is not self.my_player.color else list(Color)[1]
         if self._type is GameType.COMPUTER:
-            opponent = AIPlayer(opp_color, self.board_state)
+            opponent = AIPlayer(opp_color, self.board_state, strat=ai.random)
         else:
             raise RuntimeError(f'{self._type} is not implemented')
 

@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from . import bitboard as bb
     from .game import BoardState
 
-def random(state: BoardState) -> bb.Position:
+async def random(state: BoardState) -> bb.Position:
     """ Returns a random valid move or None if no moves are possible. """
     try:
         return chooseFrom(state.valid_moves())
