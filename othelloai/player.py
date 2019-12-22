@@ -2,7 +2,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable
 import asyncio
 import enum
-from . import ai
 
 if TYPE_CHECKING:
     from .game import BoardState
