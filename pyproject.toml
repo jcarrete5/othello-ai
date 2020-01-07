@@ -19,6 +19,9 @@ torch = "^1.3.1"
 pylint = "^2.4"
 pytest = "^5.2.1"
 
+[tool.poetry.scripts]
+othello = "othelloai.main:start_ui"
+
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
