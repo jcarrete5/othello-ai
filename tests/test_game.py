@@ -1,9 +1,10 @@
 from __future__ import annotations
-# from typing import TYPE_CHECKING
+
 import pytest
+
+from othelloai import bitboard as bb
 from othelloai.game import Board, BoardState, IllegalMoveError
 from othelloai.player import Color
-from othelloai import bitboard as bb
 
 
 def test_place_and_capture():

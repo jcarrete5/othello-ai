@@ -1,33 +1,28 @@
-"""
-Core game logic
-"""
+"""Core game logic."""
 from __future__ import annotations
+
+import asyncio
+import enum
 import logging
 import re
 import threading
-import asyncio
-import enum
-from typing import TYPE_CHECKING, List
-from . import bitboard as bb, ai
-from .player import Color, Player, AIPlayer
+from typing import TYPE_CHECKING
+
+from . import ai
+from . import bitboard as bb
+from .player import AIPlayer, Color, Player
 
 if TYPE_CHECKING:
     from queue import Queue
 
 _LOGGER = logging.getLogger(__name__)
 
-
-class EventName(enum.Enum):
-    BOARD_CHANGED = enum.auto()
-
-
-class GameType(enum.Enum):
-    COMPUTER = enum.auto()
-    ONLINE = enum.auto()
+EventName = enum.Enum("EventName", "BOARD_CHANGED")
+GameType = enum.Enum("GameType", "COMPUTER ONLINE")
 
 
 class IllegalMoveError(Exception):
-    """ Raised when an illegal move is attempted. """
+    """Raised when an illegal move is attempted."""
 
 
 class BoardState:
@@ -37,11 +32,11 @@ class BoardState:
         self.turn_player_color = turn_player_color
 
     def empty_cells(self) -> int:
-        """ Return a bitboard representing empty cells. """
+        """Return a bitboard representing empty cells."""
         return bb.not_(self.white | self.black)
 
-    def valid_moves(self) -> List[bb.Position]:
-        """ Return a list of positions of valid moves for the turn player. """
+    def valid_moves(self) -> list[bb.Position]:
+        """Return a list of positions of valid moves for the turn player."""
         if self.turn_player_color is Color.BLACK:
             my_pieces = self.black
             foe_pieces = self.white
@@ -63,31 +58,34 @@ class BoardState:
         self.turn_player_color = Color.BLACK
 
     def __eq__(self, other: BoardState):
-        return \
-            self.white == other.white \
-            and self.black == other.black \
+        return (
+            self.white == other.white
+            and self.black == other.black
             and self.turn_player_color == other.turn_player_color
+        )
 
     def __str__(self):
         def symbol_at(row: int, col: int) -> str:
             mask = bb.pos_mask(row, col)
             if self.white & mask != 0:
-                return '\u2588'
+                return "\u2588"
             elif self.black & mask != 0:
-                return '\u2591'
+                return "\u2591"
             else:
-                return '-'
+                return "-"
+
         res = [symbol_at(r, c) for r in range(8) for c in range(8)]
-        return '\n'.join(re.findall('........', ''.join(res)))
+        return "\n".join(re.findall("........", "".join(res)))
 
 
 class Board:
-    """ Logic for placing moves and manipulating board state. """
+    """Logic for placing moves and manipulating board state."""
+
     def __init__(self, board_state: BoardState):
         self.board_state = board_state
 
     def place(self, color: Color, pos: bb.Position):
-        """ Place a piece of color `color` at position `pos`
+        """Place a piece of color `color` at position `pos`.
 
         Raises an IllegalMoveError if an illegal move was attempted
         """
@@ -101,14 +99,16 @@ class Board:
             self.board_state.white |= pos_mask
 
     def _capture(self, color: Color, pos: bb.Position):
-        """
-        Find pieces that should be captured by playing `color`
-        at `pos` and capture those pieces
+        """Find pieces that should be captured.
 
-        Raises an IllegalMoveError if an illegal move was attempted
+        It does this by playing `color` at `pos` and capture those pieces.
+        Raises an IllegalMoveError if an illegal move was attempted.
         """
-        my_pieces = self.board_state.white if color is Color.WHITE else self.board_state.black
+        my_pieces = (
+            self.board_state.white if color is Color.WHITE else self.board_state.black
+        )
         empty = self.board_state.empty_cells()
+
         class State:
             def __init__(self, dir_, init_bb=0x0):
                 self.bb = init_bb
@@ -129,6 +129,7 @@ class Board:
                 self.capped = my_pieces & selected != 0
                 self.on_empty = empty & selected != 0
                 return not self.on_edge and not self.capped and not self.on_empty
+
         start = bb.pos_mask(*pos)
         states = [State(dir_, start) for dir_ in bb.DIRECTIONS]
         did_commit = False
@@ -151,7 +152,7 @@ class Board:
 
 
 class Game(threading.Thread):
-    """ Core game logic loop.
+    """Core game logic loop.
 
     Can be started as a thread or used in an asyncio event loop directly.
     """
@@ -159,12 +160,14 @@ class Game(threading.Thread):
     # Used to differentiate different game threads in logs
     game_counter = 0
 
-    def __init__(self,
-                 board_state: BoardState,
-                 my_color: Color,
-                 type_: GameType,
-                 out_queue: Queue = None):
-        super().__init__(name=f'GameThread ({Game.game_counter})')
+    def __init__(
+        self,
+        board_state: BoardState,
+        my_color: Color,
+        type_: GameType,
+        out_queue: Queue = None,
+    ):
+        super().__init__(name=f"GameThread ({Game.game_counter})")
         Game.game_counter += 1
         self.board_state = board_state
         self.my_player = None
@@ -175,7 +178,7 @@ class Game(threading.Thread):
         self._out_queue = out_queue
 
     def interrupt(self):
-        """ Stop the game loop. Thread-safe. """
+        """Stop the game loop (Thread-safe)."""
         if self._loop and self._loop.is_running():
             self._loop.call_soon_threadsafe(self._loop.stop)
         else:
@@ -187,30 +190,44 @@ class Game(threading.Thread):
         # Send initial board state
         if self._out_queue:
             self._out_queue.put(
-                (EventName.BOARD_CHANGED, self.board_state.white, self.board_state.black)
+                (
+                    EventName.BOARD_CHANGED,
+                    self.board_state.white,
+                    self.board_state.black,
+                )
             )
 
         self.my_player = Player(self._my_color)
         # Set opponent color to be opposite mine
-        opp_color = list(Color)[0] if list(Color)[0] is not self.my_player.color else list(Color)[1]
+        opp_color = (
+            list(Color)[0]
+            if list(Color)[0] is not self.my_player.color
+            else list(Color)[1]
+        )
         if self._type is GameType.COMPUTER:
             opponent = AIPlayer(opp_color, self.board_state, strat=ai.random)
         else:
-            raise RuntimeError(f'{self._type} is not implemented')
+            raise RuntimeError(f"{self._type} is not implemented")
 
-        turn_player = self.my_player if self.my_player.color is Color.BLACK else opponent
+        turn_player = (
+            self.my_player if self.my_player.color is Color.BLACK else opponent
+        )
         while self._loop.is_running():
-            _LOGGER.info('Waiting for %s to make a move', turn_player)
+            _LOGGER.info("Waiting for %s to make a move", turn_player)
             move = await turn_player.move
             if move is not None:
-                _LOGGER.info('%s played %s', turn_player, move)
+                _LOGGER.info("%s played %s", turn_player, move)
                 self._board.place(turn_player.color, move)
             else:
-                _LOGGER.info('%s passed their move', str(turn_player))
+                _LOGGER.info("%s passed their move", str(turn_player))
 
             if self._out_queue:
                 self._out_queue.put(
-                    (EventName.BOARD_CHANGED, self.board_state.white, self.board_state.black)
+                    (
+                        EventName.BOARD_CHANGED,
+                        self.board_state.white,
+                        self.board_state.black,
+                    )
                 )
 
             # Change to other player
@@ -218,10 +235,10 @@ class Game(threading.Thread):
             self.board_state.turn_player_color = turn_player.color
 
     def run(self):
-        _LOGGER.info('New game started')
+        _LOGGER.info("New game started")
         try:
             asyncio.run(self.loop())
         except RuntimeError as err:
             _LOGGER.error(err)
         finally:
-            _LOGGER.info('Game ended')
+            _LOGGER.info("Game ended")
