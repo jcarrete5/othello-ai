@@ -5,20 +5,20 @@ packages = [
 ]
 version = "0.1.1"
 description = "Othello game engine"
-authors = ["Jason R. Carrete <jasoncarrete5@gmail.com>"]
+authors = ["Jason Carrete <jasoncarrete5@gmail.com>"]
 license = "MIT"
 readme = "README.md"
-repository = "https://github.com/jcarrete5/othello-ai"
+repository = "https://gitlab.com/jcarrete5/othello-ai"
 keywords = ["othello", "ai"]
 
 [tool.poetry.dependencies]
 python = "^3.9"
 
 [tool.poetry.dev-dependencies]
-pytest = "^5.2.1"
-flake8 = "^3.9.0"
+pytest = "^7.0.1"
+flake8 = "^4.0.1"
 isort = "^5.8.0"
-black = "^20.8b1"
+black = "^22.1.0"
 
 [tool.poetry.scripts]
 othello = "othelloai.main:start_ui"
