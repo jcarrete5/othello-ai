@@ -1,4 +1,5 @@
 """Core game logic."""
+
 from __future__ import annotations
 
 import asyncio
@@ -17,8 +18,14 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
-EventName = enum.Enum("EventName", "BOARD_CHANGED")
-GameType = enum.Enum("GameType", "COMPUTER ONLINE")
+
+class EventName(enum.Enum):
+    BOARD_CHANGED = enum.auto()
+
+
+class GameType(enum.Enum):
+    COMPUTER = enum.auto()
+    ONLINE = enum.auto()
 
 
 class IllegalMoveError(Exception):
@@ -205,7 +212,7 @@ class Game(threading.Thread):
             else list(Color)[1]
         )
         if self._type is GameType.COMPUTER:
-            opponent = AIPlayer(opp_color, self.board_state, strat=ai.random)
+            opponent = AIPlayer(opp_color, self.board_state, strategy=ai.random)
         else:
             raise RuntimeError(f"{self._type} is not implemented")
 

@@ -1,14 +1,14 @@
 """
 UI for the othello application.
 """
-from __future__ import annotations
 
 import logging
 import tkinter as tk
 import tkinter.messagebox
 from queue import Empty as QueueEmpty
 from queue import Queue
-from random import choice as chooseFrom
+from random import choice as choose_from
+from typing import Optional
 
 from . import bitboard as bb
 from .game import BoardState, EventName, Game, GameType
@@ -17,7 +17,7 @@ from .player import Color
 EVENT_QUEUE = Queue()
 _EVENT_SUBSCRIPTIONS = dict()
 _LOGGER = logging.getLogger(__name__)
-_game = None
+_game: Optional[Game] = None
 
 
 class BoardView(tk.Canvas):
@@ -122,16 +122,16 @@ class NewGameDialog(tk.Toplevel):
         frame.pack_configure(expand=True)
         self.game_type = tk.StringVar(frame, GameType.COMPUTER.name)
         self.color_var = tk.StringVar(frame, Color.BLACK.name)
-        oppenent_frame = tk.LabelFrame(frame, text="Opponent")
-        oppenent_frame.grid(row=0, column=0, sticky="n")
+        opponent_frame = tk.LabelFrame(frame, text="Opponent")
+        opponent_frame.grid(row=0, column=0, sticky="n")
         tk.Radiobutton(
-            oppenent_frame,
+            opponent_frame,
             text="Computer",
             variable=self.game_type,
             value=GameType.COMPUTER.name,
         ).grid(row=1, column=0, sticky="w")
         tk.Radiobutton(
-            oppenent_frame,
+            opponent_frame,
             text="Online",
             variable=self.game_type,
             value=GameType.ONLINE.name,
@@ -183,7 +183,7 @@ class NewGameDialog(tk.Toplevel):
             state,
             self.color_var.get()
             and Color[self.color_var.get()]
-            or chooseFrom(list(Color)),
+            or choose_from(list(Color)),
             GameType[self.game_type.get()],
             EVENT_QUEUE,
         )
@@ -221,13 +221,13 @@ def _init_widgets(root: tk.Tk):
     main.pack_configure(expand=True)
     board_view = BoardView(main)
 
-    menubar = tk.Menu(root)
-    gamemenu = tk.Menu(menubar, tearoff=0)
-    gamemenu.add_command(
+    menu_bar = tk.Menu(root)
+    game_menu = tk.Menu(menu_bar, tearoff=0)
+    game_menu.add_command(
         label="New Game...", command=lambda: NewGameDialog(root, board_view)
     )
-    menubar.add_cascade(label="Game", menu=gamemenu)
-    root.config(menu=menubar)
+    menu_bar.add_cascade(label="Game", menu=game_menu)
+    root.config(menu=menu_bar)
 
 
 def loop():

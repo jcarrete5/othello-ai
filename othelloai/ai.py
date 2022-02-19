@@ -1,17 +1,16 @@
 """Strategies and implementation details for the AI."""
-from __future__ import annotations
 
-from random import choice as chooseFrom
-from typing import TYPE_CHECKING
+from random import choice as choose_from
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from . import bitboard as bb
     from .game import BoardState
 
 
-async def random(state: BoardState) -> bb.Position:
+async def random(state: BoardState) -> Optional[bb.Position]:
     """Return a random valid move or None if no moves are possible."""
     try:
-        return chooseFrom(state.valid_moves())
+        return choose_from(state.valid_moves())
     except IndexError:
         return None

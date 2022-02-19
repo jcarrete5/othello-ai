@@ -1,4 +1,5 @@
 """Bitboard operations. All operations assume that the board is 8x8."""
+
 import operator as op
 from collections import namedtuple
 from functools import reduce

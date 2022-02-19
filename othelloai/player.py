@@ -1,14 +1,15 @@
-from __future__ import annotations
-
 import asyncio
 import enum
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, Coroutine, Optional
 
 if TYPE_CHECKING:
     from .bitboard import Position
     from .game import BoardState
 
-Color = enum.Enum("Color", "BLACK WHITE")
+
+class Color(enum.Enum):
+    BLACK = enum.auto()
+    WHITE = enum.auto()
 
 
 class Player:
@@ -24,7 +25,7 @@ class Player:
         return self._color
 
     @property
-    async def move(self) -> Position:
+    async def move(self) -> Optional[Position]:
         """ The next move this player intends to make. """
         move = await self._move
         del self.move
@@ -51,12 +52,12 @@ class Player:
 
 class AIPlayer(Player):
     def __init__(
-        self, color: Color, state: BoardState, strat: Callable[[BoardState], Position]
+        self, color: Color, state: BoardState, strategy: Callable[[BoardState], Coroutine[Optional[Position]]]
     ):
         super().__init__(color)
-        self._strat = strat
+        self._strategy = strategy
         self._state = state
 
     @Player.move.getter
     async def move(self):
-        return await self._strat(self._state)
+        return await self._strategy(self._state)
