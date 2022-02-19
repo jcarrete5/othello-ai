@@ -1,6 +1,6 @@
 import asyncio
 import enum
-from typing import TYPE_CHECKING, Callable, Coroutine, Optional
+from typing import TYPE_CHECKING, Callable, Coroutine, Optional, Any
 
 if TYPE_CHECKING:
     from .bitboard import Position
@@ -25,14 +25,14 @@ class Player:
         return self._color
 
     @property
-    async def move(self) -> Optional[Position]:
-        """ The next move this player intends to make. """
+    async def move(self) -> Optional["Position"]:
+        """The next move this player intends to make."""
         move = await self._move
         del self.move
         return move
 
     @move.setter
-    def move(self, value: Position):
+    def move(self, value: "Position"):
         def callback():
             if self._move.done():
                 raise RuntimeError(
@@ -52,7 +52,10 @@ class Player:
 
 class AIPlayer(Player):
     def __init__(
-        self, color: Color, state: BoardState, strategy: Callable[[BoardState], Coroutine[Optional[Position]]]
+        self,
+        color: Color,
+        state: "BoardState",
+        strategy: Callable[["BoardState"], Coroutine[Any, Any, Optional["Position"]]],
     ):
         super().__init__(color)
         self._strategy = strategy
