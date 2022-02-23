@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import enum
 import logging
 import re
@@ -11,21 +10,21 @@ from typing import TYPE_CHECKING
 
 from . import ai
 from . import bitboard as bb
-from .player import AIPlayer, Color, Player
+from .player import Color, make_computer_player, Player
 
 if TYPE_CHECKING:
     from queue import Queue
 
-_LOGGER = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 
-class EventName(enum.Enum):
-    BOARD_CHANGED = enum.auto()
+class EventType(enum.Enum):
+    board_changed = enum.auto()
 
 
 class GameType(enum.Enum):
-    COMPUTER = enum.auto()
-    ONLINE = enum.auto()
+    computer = enum.auto()
+    online = enum.auto()
 
 
 class IllegalMoveError(Exception):
@@ -158,11 +157,8 @@ class Board:
         return str(self.board_state)
 
 
-class Game(threading.Thread):
-    """Core game logic loop.
-
-    Can be started as a thread or used in an asyncio event loop directly.
-    """
+class Game:
+    """Core game logic loop."""
 
     # Used to differentiate different game threads in logs
     game_counter = 0
@@ -170,82 +166,86 @@ class Game(threading.Thread):
     def __init__(
         self,
         board_state: BoardState,
-        my_color: Color,
+        my_player: Player,
         type_: GameType,
         out_queue: Queue = None,
+        ai_strategy: ai.Strategy = None,
     ):
-        super().__init__(name=f"GameThread ({Game.game_counter})")
         Game.game_counter += 1
         self.board_state = board_state
-        self.my_player = None
-        self._loop = None
-        self._my_color = my_color
+        self._my_player = my_player
         self._board = Board(self.board_state)
         self._type = type_
         self._out_queue = out_queue
+        self._runner = threading.Thread(
+            target=self.loop, name=f"GameThread ({Game.game_counter})"
+        )
+        self._game_stopped_event = threading.Event()
 
-    def interrupt(self):
-        """Stop the game loop (Thread-safe)."""
-        if self._loop and self._loop.is_running():
-            self._loop.call_soon_threadsafe(self._loop.stop)
+        # Set opponent color to be opposite my_player
+        opp_color = (
+            list(Color)[0]
+            if list(Color)[0] is not self._my_player.color
+            else list(Color)[1]
+        )
+        if self._type is GameType.computer:
+            assert (
+                ai_strategy
+            ), "AI strategy must not be None when playing against a computer"
+            self.opponent = make_computer_player(
+                opp_color, ai_strategy, self.board_state
+            )
         else:
-            _LOGGER.warning("Game event loop was interrupted but it wasn't running")
+            assert False, f"{self._type} is not implemented"
 
-    async def loop(self):
-        self._loop = asyncio.get_running_loop()
-
+    def loop(self):
         # Send initial board state
         if self._out_queue:
             self._out_queue.put(
                 (
-                    EventName.BOARD_CHANGED,
+                    EventType.board_changed,
                     self.board_state.white,
                     self.board_state.black,
                 )
             )
 
-        self.my_player = Player(self._my_color)
-        # Set opponent color to be opposite mine
-        opp_color = (
-            list(Color)[0]
-            if list(Color)[0] is not self.my_player.color
-            else list(Color)[1]
-        )
-        if self._type is GameType.COMPUTER:
-            opponent = AIPlayer(opp_color, self.board_state, strategy=ai.random)
-        else:
-            raise RuntimeError(f"{self._type} is not implemented")
-
         turn_player = (
-            self.my_player if self.my_player.color is Color.BLACK else opponent
+            self._my_player if self._my_player.color is Color.BLACK else self.opponent
         )
-        while self._loop.is_running():
-            _LOGGER.info("Waiting for %s to make a move", turn_player)
-            move = await turn_player.move
+        while not self._game_stopped_event.is_set():
+            _logger.info("Waiting for %s to make a move", turn_player)
+
+            move = turn_player.get_move()  # May block
+
             if move is not None:
-                _LOGGER.info("%s played %s", turn_player, move)
+                _logger.info("%s played %s", turn_player, move)
                 self._board.place(turn_player.color, move)
             else:
-                _LOGGER.info("%s passed their move", str(turn_player))
+                _logger.info("%s passed their move", str(turn_player))
 
             if self._out_queue:
                 self._out_queue.put(
                     (
-                        EventName.BOARD_CHANGED,
+                        EventType.board_changed,
                         self.board_state.white,
                         self.board_state.black,
                     )
                 )
 
             # Change to other player
-            turn_player = self.my_player if turn_player is opponent else opponent
+            turn_player = (
+                self._my_player if turn_player is self.opponent else self.opponent
+            )
             self.board_state.turn_player_color = turn_player.color
 
-    def run(self):
-        _LOGGER.info("New game started")
-        try:
-            asyncio.run(self.loop())
-        except RuntimeError as err:
-            _LOGGER.error(err)
-        finally:
-            _LOGGER.info("Game ended")
+    def shutdown(self):
+        assert not self._game_stopped_event.is_set(), "Game already shutdown"
+        self._game_stopped_event.set()
+        _logger.debug("Game stopped event set")
+        self._runner.join()
+        _logger.info("Game stopped")
+
+    def start(self):
+        assert not self._runner.is_alive(), "Game already started"
+        self._runner.start()
+        _logger.info("New game started")

@@ -1,8 +1,7 @@
-"""
-UI for the othello application.
-"""
+"""UI for the othello application."""
 
 import logging
+import threading
 import tkinter as tk
 import tkinter.messagebox
 from queue import Empty as QueueEmpty
@@ -10,14 +9,17 @@ from queue import Queue
 from random import choice as choose_from
 from typing import Optional
 
+import ai
 from . import bitboard as bb
-from .game import BoardState, EventName, Game, GameType
-from .player import Color
+from .game import BoardState, EventType, Game, GameType
+from .player import Color, make_local_player, Player
 
-EVENT_QUEUE = Queue()
-_EVENT_SUBSCRIPTIONS = dict()
-_LOGGER = logging.getLogger(__name__)
+event_queue = Queue()
+_event_subscriptions = dict()
+_logger = logging.getLogger(__name__)
 _game: Optional[Game] = None
+_my_player: Optional[Player] = None
+_ui_reset_event = threading.Event()
 
 
 class BoardView(tk.Canvas):
@@ -39,29 +41,31 @@ class BoardView(tk.Canvas):
         self.bind("<Button-1>", self.onclick)
 
         self._board_state = None
-        _LOGGER.debug(
+        _logger.debug(
             "Canvas dim (%d, %d)", self.winfo_reqwidth(), self.winfo_reqheight()
         )
-        _subscribe(EventName.BOARD_CHANGED, self._redraw)
+        _subscribe(EventType.board_changed, self._redraw)
         self._redraw(0, 0)
 
     def onclick(self, event):
-        _LOGGER.debug("BoardView clicked %s", event)
+        _logger.debug("BoardView clicked %s", event)
+
         if _game is None:
             return
+
         col = (event.x - self._border_width) / self.winfo_reqwidth() * 8
         row = (event.y - self._border_width) / self.winfo_reqheight() * 8
-        _LOGGER.debug("(row=%f, col=%f)", row, col)
-        _LOGGER.debug("(row=%d, col=%d)", row, col)
+        _logger.debug("(row=%f, col=%f)", row, col)
+        _logger.debug("(row=%d, col=%d)", row, col)
         if 0 <= col < 8 and 0 <= row < 8:
-            move = bb.Position(int(row), int(col))
-            if move in _game.board_state.valid_moves():
-                _game.my_player.move = move
+            pos = bb.Position(int(row), int(col))
+            if pos in _game.board_state.valid_moves():
+                _my_player.make_move(pos)
             else:
-                _LOGGER.info("%s played an invalid move", _game.my_player)
+                _logger.info("%s played an invalid move", _my_player)
 
     def _redraw(self, white: int, black: int):
-        _LOGGER.debug("Redrawing Board with white=%0#16x, black=%0#16x", white, black)
+        _logger.debug("Redrawing Board with white=%0#16x, black=%0#16x", white, black)
         self.delete(tk.ALL)
         for r in range(8):
             for c in range(8):
@@ -120,7 +124,7 @@ class NewGameDialog(tk.Toplevel):
 
         frame = tk.Frame(self)
         frame.pack_configure(expand=True)
-        self.game_type = tk.StringVar(frame, GameType.COMPUTER.name)
+        self.game_type = tk.StringVar(frame, GameType.computer.name)
         self.color_var = tk.StringVar(frame, Color.BLACK.name)
         opponent_frame = tk.LabelFrame(frame, text="Opponent")
         opponent_frame.grid(row=0, column=0, sticky="n")
@@ -128,13 +132,13 @@ class NewGameDialog(tk.Toplevel):
             opponent_frame,
             text="Computer",
             variable=self.game_type,
-            value=GameType.COMPUTER.name,
+            value=GameType.computer.name,
         ).grid(row=1, column=0, sticky="w")
         tk.Radiobutton(
             opponent_frame,
             text="Online",
             variable=self.game_type,
-            value=GameType.ONLINE.name,
+            value=GameType.online.name,
             state=tk.DISABLED,
         ).grid(row=2, column=0, sticky="w")
         color_frame = tk.LabelFrame(frame, text="Color")
@@ -153,15 +157,16 @@ class NewGameDialog(tk.Toplevel):
         self.bind("<Escape>", lambda e: self.cancel())
         self.bind("<Return>", lambda e: self.submit())
         self.wait_window(self)
-        _LOGGER.debug("NewGameDialog closed")
+        _logger.debug("NewGameDialog closed")
 
     def cancel(self):
-        _LOGGER.debug("Cancel")
+        _logger.debug("Cancel")
         self.destroy()
 
     def submit(self):
-        _LOGGER.debug("Submit")
         global _game
+
+        _logger.debug("Submit")
 
         if _game is not None:
             proceed = tk.messagebox.askokcancel(
@@ -171,46 +176,63 @@ class NewGameDialog(tk.Toplevel):
             if not proceed:
                 self.destroy()
 
+        self._reset_game()
+
+        self.destroy()
+
+    def _reset_game(self):
+        global _game
+        global _my_player
+
         state = BoardState(
             init_white=0x0000001008000000,
             init_black=0x0000000810000000,
             turn_player_color=Color.BLACK,
         )
         self.board_view.board_state = state
-        if _game:
-            _game.interrupt()
-        _game = Game(
-            state,
+
+        my_color = (
             self.color_var.get()
             and Color[self.color_var.get()]
-            or choose_from(list(Color)),
+            or choose_from(list(Color))
+        )
+        _my_player = make_local_player(my_color, _ui_reset_event)
+
+        if _game is not None:
+            _ui_reset_event.set()
+            _game.shutdown()
+            _ui_reset_event.clear()
+
+        _game = Game(
+            state,
+            _my_player,
             GameType[self.game_type.get()],
-            EVENT_QUEUE,
+            event_queue,
+            ai.random,  # TODO: Allow the user to select this
         )
         _game.start()
-        self.destroy()
 
 
-def _subscribe(name: EventName, callback):
+def _subscribe(name: EventType, callback):
     """Add a callback for event name `name`."""
-    if name in _EVENT_SUBSCRIPTIONS:
-        _EVENT_SUBSCRIPTIONS[name].append(callback)
+    if name in _event_subscriptions:
+        _event_subscriptions[name].append(callback)
     else:
-        _EVENT_SUBSCRIPTIONS[name] = [callback]
+        _event_subscriptions[name] = [callback]
 
 
 def _poll_queue(root: tk.Tk):
     """Periodically poll the event queue for messages."""
     try:
-        event_name, *args = EVENT_QUEUE.get_nowait()
+        event_name, *args = event_queue.get_nowait()
     except QueueEmpty:
         pass
     else:
-        if event_name in _EVENT_SUBSCRIPTIONS:
-            for callback in _EVENT_SUBSCRIPTIONS[event_name]:
+        if event_name in _event_subscriptions:
+            for callback in _event_subscriptions[event_name]:
                 callback(*args)
         else:
-            _LOGGER.warning("Unhandled event %r with args %s", event_name, args)
+            _logger.warning("Unhandled event %r with args %s", event_name, args)
     root.after(100, _poll_queue, root)
 
 
@@ -231,15 +253,16 @@ def _init_widgets(root: tk.Tk):
 
 
 def loop():
-    _LOGGER.info("Init ui loop")
+    global _game
+
+    _logger.info("Init ui loop")
+
     try:
         root = tk.Tk()
         _init_widgets(root)
         root.after(100, _poll_queue, root)
         root.mainloop()
-        global _game
-        if _game is not None:
-            _game.interrupt()
-            _game.join()
     finally:
-        _LOGGER.info("Quit ui loop")
+        _ui_reset_event.set()
+        if _game is not None:
+            _game.shutdown()
