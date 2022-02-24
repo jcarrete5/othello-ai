@@ -19,6 +19,7 @@ pytest = "^7.0.1"
 flake8 = "^4.0.1"
 isort = "^5.8.0"
 black = "^22.1.0"
+coverage = "^6.3.2"
 
 [tool.poetry.scripts]
 othello = "othelloai.main:start_gui"
