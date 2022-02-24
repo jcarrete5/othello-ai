@@ -1,25 +1,21 @@
-"""UI for the othello application."""
+"""GUI for the othello application."""
 
 import logging
-import threading
 import tkinter as tk
 import tkinter.messagebox
-from queue import Empty as QueueEmpty
-from queue import Queue
 from random import choice as choose_from
 from typing import Optional
 
-import ai
-from . import bitboard as bb
-from .game import BoardState, EventType, Game, GameType
-from .player import Color, make_local_player, Player
+from .player import GUIPlayer
+from .. import bitboard as bb
+from ..ai import ai_default, ai_options
+from ..board import Board
+from ..color import Color, opposite_color
+from ..game import Game, GameType
 
-event_queue = Queue()
-_event_subscriptions = dict()
 _logger = logging.getLogger(__name__)
 _game: Optional[Game] = None
-_my_player: Optional[Player] = None
-_ui_reset_event = threading.Event()
+_my_player: Optional[GUIPlayer] = None
 
 
 class BoardView(tk.Canvas):
@@ -40,17 +36,16 @@ class BoardView(tk.Canvas):
         self.pack()
         self.bind("<Button-1>", self.onclick)
 
-        self._board_state = None
         _logger.debug(
             "Canvas dim (%d, %d)", self.winfo_reqwidth(), self.winfo_reqheight()
         )
-        _subscribe(EventType.board_changed, self._redraw)
-        self._redraw(0, 0)
+
+        self.redraw(Board(0, 0))
 
     def onclick(self, event):
         _logger.debug("BoardView clicked %s", event)
-
-        if _game is None:
+        if _my_player is None:
+            _logger.debug("My player is None. Ignoring...")
             return
 
         col = (event.x - self._border_width) / self.winfo_reqwidth() * 8
@@ -59,13 +54,10 @@ class BoardView(tk.Canvas):
         _logger.debug("(row=%d, col=%d)", row, col)
         if 0 <= col < 8 and 0 <= row < 8:
             pos = bb.Position(int(row), int(col))
-            if pos in _game.board_state.valid_moves():
-                _my_player.make_move(pos)
-            else:
-                _logger.info("%s played an invalid move", _my_player)
+            _my_player.make_move(pos)
 
-    def _redraw(self, white: int, black: int):
-        _logger.debug("Redrawing Board with white=%0#16x, black=%0#16x", white, black)
+    def redraw(self, board: Board):
+        _logger.debug("Redrawing\n%s", board)
         self.delete(tk.ALL)
         for r in range(8):
             for c in range(8):
@@ -88,9 +80,9 @@ class BoardView(tk.Canvas):
                 mask = bb.pos_mask(r, c)
                 inset = 5
                 fill_color = None
-                if white & mask != 0:
+                if board.white & mask != 0:
                     fill_color = "#fff"
-                elif black & mask != 0:
+                elif board.black & mask != 0:
                     fill_color = "#000"
                 if fill_color:
                     self.create_oval(
@@ -124,10 +116,31 @@ class NewGameDialog(tk.Toplevel):
 
         frame = tk.Frame(self)
         frame.pack_configure(expand=True)
+
+        self.color_var = tk.StringVar(frame, Color.black.name)
+        color_frame = tk.LabelFrame(frame, text="Color")
+        color_frame.grid(row=0, column=0, sticky="n")
+        tk.Radiobutton(
+            color_frame, text="Black", variable=self.color_var, value=Color.black.name
+        ).grid(row=1, column=1, sticky="w")
+        tk.Radiobutton(
+            color_frame, text="White", variable=self.color_var, value=Color.white.name
+        ).grid(row=2, column=1, sticky="w")
+        tk.Radiobutton(
+            color_frame, text="Random", variable=self.color_var, value=None
+        ).grid(row=3, column=1, sticky="w")
+
+        self.ai_var = tk.StringVar(frame, ai_default)
+        ai_frame = tk.LabelFrame(frame, text="AI")
+        ai_frame.grid(row=0, column=1, sticky="n")
+        for ai_name in ai_options:
+            tk.Radiobutton(
+                ai_frame, text=ai_name, variable=self.ai_var, value=ai_name
+            ).grid(row=0, column=0, sticky="w")
+
         self.game_type = tk.StringVar(frame, GameType.computer.name)
-        self.color_var = tk.StringVar(frame, Color.BLACK.name)
         opponent_frame = tk.LabelFrame(frame, text="Opponent")
-        opponent_frame.grid(row=0, column=0, sticky="n")
+        opponent_frame.grid(row=0, column=2, sticky="n")
         tk.Radiobutton(
             opponent_frame,
             text="Computer",
@@ -141,19 +154,10 @@ class NewGameDialog(tk.Toplevel):
             value=GameType.online.name,
             state=tk.DISABLED,
         ).grid(row=2, column=0, sticky="w")
-        color_frame = tk.LabelFrame(frame, text="Color")
-        color_frame.grid(row=0, column=1, sticky="n")
-        tk.Radiobutton(
-            color_frame, text="Black", variable=self.color_var, value=Color.BLACK.name
-        ).grid(row=1, column=1, sticky="w")
-        tk.Radiobutton(
-            color_frame, text="White", variable=self.color_var, value=Color.WHITE.name
-        ).grid(row=2, column=1, sticky="w")
-        tk.Radiobutton(
-            color_frame, text="Random", variable=self.color_var, value=None
-        ).grid(row=3, column=1, sticky="w")
+
         tk.Button(frame, text="Cancel", command=self.cancel).grid(row=1, column=0)
         tk.Button(frame, text="Start", command=self.submit).grid(row=1, column=1)
+
         self.bind("<Escape>", lambda e: self.cancel())
         self.bind("<Return>", lambda e: self.submit())
         self.wait_window(self)
@@ -182,58 +186,34 @@ class NewGameDialog(tk.Toplevel):
 
     def _reset_game(self):
         global _game
-        global _my_player
 
-        state = BoardState(
-            init_white=0x0000001008000000,
-            init_black=0x0000000810000000,
-            turn_player_color=Color.BLACK,
-        )
-        self.board_view.board_state = state
+        self._make_my_player()
+        opponent = self._make_opponent_player(opposite_color(_my_player.color))
+
+        if _game is not None:
+            _game.shutdown()
+
+        _game = Game(_my_player, opponent)
+        _game.start()
+
+    def _make_my_player(self):
+        global _my_player
 
         my_color = (
             self.color_var.get()
             and Color[self.color_var.get()]
             or choose_from(list(Color))
         )
-        _my_player = make_local_player(my_color, _ui_reset_event)
+        _my_player = GUIPlayer(my_color, self.board_view.redraw)
 
-        if _game is not None:
-            _ui_reset_event.set()
-            _game.shutdown()
-            _ui_reset_event.clear()
-
-        _game = Game(
-            state,
-            _my_player,
-            GameType[self.game_type.get()],
-            event_queue,
-            ai.random,  # TODO: Allow the user to select this
-        )
-        _game.start()
-
-
-def _subscribe(name: EventType, callback):
-    """Add a callback for event name `name`."""
-    if name in _event_subscriptions:
-        _event_subscriptions[name].append(callback)
-    else:
-        _event_subscriptions[name] = [callback]
-
-
-def _poll_queue(root: tk.Tk):
-    """Periodically poll the event queue for messages."""
-    try:
-        event_name, *args = event_queue.get_nowait()
-    except QueueEmpty:
-        pass
-    else:
-        if event_name in _event_subscriptions:
-            for callback in _event_subscriptions[event_name]:
-                callback(*args)
+    def _make_opponent_player(self, color: Color):
+        game_type = GameType[self.game_type.get()]
+        if game_type == GameType.computer:
+            OpponentPlayerClass = ai_options[self.ai_var.get()]
+            opponent = OpponentPlayerClass(color)
         else:
-            _logger.warning("Unhandled event %r with args %s", event_name, args)
-    root.after(100, _poll_queue, root)
+            assert False, f"{game_type} not implemented"
+        return opponent
 
 
 def _init_widgets(root: tk.Tk):
@@ -260,9 +240,7 @@ def loop():
     try:
         root = tk.Tk()
         _init_widgets(root)
-        root.after(100, _poll_queue, root)
         root.mainloop()
     finally:
-        _ui_reset_event.set()
         if _game is not None:
             _game.shutdown()

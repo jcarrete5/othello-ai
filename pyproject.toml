@@ -21,7 +21,7 @@ isort = "^5.8.0"
 black = "^22.1.0"
 
 [tool.poetry.scripts]
-othello = "othelloai.main:start_ui"
+othello = "othelloai.main:start_gui"
 
 [tool.isort]
 profile = "black"

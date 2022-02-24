@@ -1,100 +1,54 @@
-"""Implementations for objects that provide moves."""
+"""Player abstract base class definition."""
 
-import enum
 import threading
 from abc import ABC, abstractmethod
-from typing import Optional, TYPE_CHECKING
 
-from .ai import Strategy
-
-if TYPE_CHECKING:
-    from .bitboard import Position
-    from .game import BoardState
+from .exception import IllegalMoveError, PassMove
+from .bitboard import Position
+from .board import Board
+from .color import Color
 
 
-class Color(enum.Enum):
-    BLACK = enum.auto()
-    WHITE = enum.auto()
+class Player(ABC):
+    """Serves as an interface to communicate with a game."""
 
-
-class Mover(ABC):
-    """ABC to get and make moves for a player."""
-
-    @abstractmethod
-    def get_move(self) -> Optional["Position"]:
-        raise NotImplementedError
-
-    @abstractmethod
-    def set_move(self, value: "Position"):
-        raise NotImplementedError
-
-
-class SynchronizedMover(Mover):
-    """
-    Getting and making moves are synchronized.
-
-    A move can only be gotten after it has been set and a move can only
-    be set if it is not already set.
-    """
-
-    def __init__(self, interrupt_event: threading.Event = None):
-        self._move_event = threading.Event()
-        self._interrupt_event = interrupt_event
-        self._move: Optional["Position"] = None
-
-    def get_move(self):
-        while not self._move_event.wait(1):
-            if self._interrupt_event is None or self._interrupt_event.is_set():
-                return None
-        move = self._move
-        self._move_event.clear()
-        return move
-
-    def set_move(self, value):
-        assert (
-            not self._move_event.is_set()
-        ), "Cannot set a move if a move has already been set"
-        self._move = value
-        self._move_event.set()
-
-
-class ComputerMover(Mover):
-    """
-    Moves are gotten from a strategy function.
-
-    Cannot set moves.
-    """
-
-    def __init__(self, strategy: Strategy, state: "BoardState"):
-        self._strategy = strategy
-        self._board_state = state
-
-    def get_move(self):
-        return self._strategy(self._board_state)
-
-    def set_move(self, value):
-        assert False, "Can't set a move"
-
-
-class Player:
-    def __init__(self, color: Color, mover: Mover):
+    def __init__(self, color: Color):
+        """Construct a player with a color."""
         self._color = color
-        self._mover = mover
 
     @property
-    def color(self):
+    def color(self) -> Color:
+        """Player's color."""
         return self._color
 
-    def get_move(self):
-        return self._mover.get_move()
+    def get_move(self, board: Board, interrupt: threading.Event) -> Position:
+        """
+        Request a move from this player.
 
-    def make_move(self, value: "Position"):
-        self._mover.set_move(value)
+        The returned position is checked for validity against the board
+        and this player's turn is automatically passed if there are no
+        valid moves.
+        """
+        valid_moves = board.valid_moves()
+        if len(valid_moves) == 0:
+            raise PassMove
+        pos = self._get_move(board, interrupt)
+        if pos not in valid_moves:
+            raise IllegalMoveError
+        return pos
 
+    @abstractmethod
+    def _get_move(self, board: Board, interrupt: threading.Event) -> Position:
+        """Return a move from this player."""
+        ...
 
-def make_local_player(color: Color, interrupt_event: threading.Event = None):
-    return Player(color, SynchronizedMover(interrupt_event))
+    def signal_board_change(self, board: Board):
+        """Signal when the board has been changed."""
+        self._on_board_changed(board)
 
+    def _on_board_changed(self, board: Board):
+        """Override to observe board change events."""
+        ...
 
-def make_computer_player(color: Color, strategy: Strategy, board_state: "BoardState"):
-    return Player(color, ComputerMover(strategy, board_state))
+    def __str__(self):
+        return self.color.name

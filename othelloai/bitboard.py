@@ -83,3 +83,8 @@ def to_list(bits: int) -> list[Position]:
             if bits & mask > 0:
                 positions.append(Position(r, c))
     return positions
+
+
+def count(bits: int) -> int:
+    """Return the count of occupied cells on the bitboard."""
+    return len(to_list(bits))  # I'm lazy
