@@ -3,5 +3,5 @@
 from .random import RandomAIPlayer
 from .minmax import MinmaxAIPlayer
 
-ai_default = "Random"
-ai_options = {"Random": RandomAIPlayer, "Marty": MinmaxAIPlayer}
+ai_default = "Randy"
+ai_options = {"Randy": RandomAIPlayer, "Marty": MinmaxAIPlayer}
