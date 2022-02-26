@@ -103,15 +103,6 @@ class NewGameDialog(tk.Toplevel):
         self.focus_set()
         self.grab_set()
         self.title("New Game")
-        x = int(
-            parent.winfo_rootx() + parent.winfo_width() / 2 - self.winfo_reqwidth() / 2
-        )
-        y = int(
-            parent.winfo_rooty()
-            + parent.winfo_height() / 2
-            - self.winfo_reqheight() / 2
-        )
-        self.geometry(f"+{x}+{y}")
         self.board_view = board_view
 
         frame = tk.Frame(self)
