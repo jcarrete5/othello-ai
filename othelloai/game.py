@@ -98,10 +98,10 @@ class Game:
         self._game_stopped_event.set()
         _logger.debug("Game stopped event set")
         self._runner.join()
-        _logger.info("Game stopped")
+        _logger.debug("Game stopped")
 
     def start(self):
         """Start game loop."""
         assert not self._runner.is_alive(), "Game already started"
         self._runner.start()
-        _logger.info("New game started")
+        _logger.debug("New game started")

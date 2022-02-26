@@ -25,6 +25,6 @@ def start_gui():
     try:
         gui.loop()  # Blocked until application is closed or an error occurs
     except KeyboardInterrupt:
-        _logger.warning("Quitting application via KeyboardInterrupt...")
+        print("Quitting application via KeyboardInterrupt...")
     finally:
         logging.shutdown()

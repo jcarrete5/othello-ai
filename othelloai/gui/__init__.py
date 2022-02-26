@@ -235,7 +235,7 @@ def _init_widgets(root: tk.Tk):
 def loop():
     global _game
 
-    _logger.info("Init ui loop")
+    _logger.debug("Init ui loop")
 
     try:
         root = tk.Tk()
