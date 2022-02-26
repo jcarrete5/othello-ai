@@ -30,7 +30,7 @@ class Player(ABC):
         valid moves.
         """
         valid_moves = board.valid_moves()
-        if len(valid_moves) == 0:
+        if not valid_moves:
             raise PassMove
         pos = self._get_move(board, interrupt)
         if pos not in valid_moves:
