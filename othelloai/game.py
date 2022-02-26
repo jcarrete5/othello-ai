@@ -64,7 +64,7 @@ class Game:
             _logger.info("Waiting for %s to make a move", turn_player)
 
             try:
-                move = turn_player.get_move(self._board, self._game_stopped_event)
+                move = turn_player.get_move(self._board.copy(), self._game_stopped_event)
                 self._board.place(turn_player.color, move)
                 self._notify(EventType.board_change)
                 _logger.info("%s played %s", turn_player, move)

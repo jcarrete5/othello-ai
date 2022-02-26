@@ -133,10 +133,10 @@ class NewGameDialog(tk.Toplevel):
         self.ai_var = tk.StringVar(frame, ai_default)
         ai_frame = tk.LabelFrame(frame, text="AI")
         ai_frame.grid(row=0, column=1, sticky="n")
-        for ai_name in ai_options:
+        for i, ai_name in enumerate(ai_options):
             tk.Radiobutton(
                 ai_frame, text=ai_name, variable=self.ai_var, value=ai_name
-            ).grid(row=0, column=0, sticky="w")
+            ).grid(row=i, column=0, sticky="w")
 
         self.game_type = tk.StringVar(frame, GameType.computer.name)
         opponent_frame = tk.LabelFrame(frame, text="Opponent")
