@@ -1,7 +1,20 @@
 """AI implementations for othello."""
 
-from .random import RandomAIPlayer
-from .minmax import MinmaxAIPlayer
+import enum
 
-ai_default = "Randy"
-ai_options = {"Randy": RandomAIPlayer, "Marty": MinmaxAIPlayer}
+from .minmax import MinmaxAIPlayer
+from .random import RandomAIPlayer
+
+
+class AIOption(enum.Enum):
+    """AI options."""
+
+    Randy = enum.auto()
+    Marty = enum.auto()
+
+
+ai_default = AIOption.Randy
+ai_options = {
+    AIOption.Randy: RandomAIPlayer,
+    AIOption.Marty: MinmaxAIPlayer,
+}

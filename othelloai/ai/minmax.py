@@ -13,8 +13,12 @@ from ..player import Player
 class MinmaxAIPlayer(Player):
     """Player that uses the minmax algorithm to make moves."""
 
+    def __init__(self, color: Color, depth: int):
+        super().__init__(color)
+        self._depth = depth
+
     def _get_move(self, board: Board, interrupt: threading.Event) -> Position:
-        _, best_move = self._find_best_move(board, depth=5)
+        _, best_move = self._find_best_move(board, self._depth)
         return best_move
 
     def _evaluate_state(self, state: Board) -> int:

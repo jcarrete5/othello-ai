@@ -8,7 +8,7 @@ from typing import Optional
 
 from .player import GUIPlayer
 from .. import bitboard as bb
-from ..ai import ai_default, ai_options
+from ..ai import ai_default, ai_options, AIOption
 from ..board import Board
 from ..color import Color, opposite_color
 from ..game import Game, GameType
@@ -99,60 +99,124 @@ class NewGameDialog(tk.Toplevel):
 
     def __init__(self, parent, board_view: BoardView):
         super().__init__(parent)
+        self.board_view = board_view
+        self.ai_settings = dict(depth=3)
+
+        # Frames
+        self.frame = tk.Frame(self)
+        self.frame_color = tk.LabelFrame(self.frame, text="Color")
+        self.frame_ai = tk.LabelFrame(self.frame, text="AI")
+        self.frame_gametype = tk.LabelFrame(self.frame, text="Opponent")
+        self.frame_ai_settings = tk.LabelFrame(self.frame_ai, text="Settings", border=0)
+
+        # Variables
+        self.color_var = tk.StringVar(self.frame, Color.black.name)
+        self.game_type_var = tk.StringVar(self.frame, GameType.computer.name)
+        self.ai_var = tk.StringVar(self.frame, ai_default.name)
+        self.depth_var = tk.IntVar(self.frame, self.ai_settings["depth"])
+
+        # Radio buttons
+        self.radiobutton_color_black = tk.Radiobutton(
+            self.frame_color,
+            text="Black",
+            variable=self.color_var,
+            value=Color.black.name,
+        )
+        self.radiobutton_color_white = tk.Radiobutton(
+            self.frame_color,
+            text="White",
+            variable=self.color_var,
+            value=Color.white.name,
+        )
+        self.radiobutton_color_random = tk.Radiobutton(
+            self.frame_color, text="Random", variable=self.color_var, value=None
+        )
+        self.radiobutton_gametype_computer = tk.Radiobutton(
+            self.frame_gametype,
+            text="Computer",
+            variable=self.game_type_var,
+            value=GameType.computer.name,
+        )
+        self.radiobutton_gametype_online = tk.Radiobutton(
+            self.frame_gametype,
+            text="Online",
+            variable=self.game_type_var,
+            value=GameType.online.name,
+            state=tk.DISABLED,
+        )
+
+        # Buttons
+        self.button_cancel = tk.Button(self.frame, text="Cancel", command=self.cancel)
+        self.button_start = tk.Button(self.frame, text="Start", command=self.submit)
+
+        # Option menus
+        self.optionmenu_ai = tk.OptionMenu(
+            self.frame_ai, self.ai_var, *(ai.name for ai in ai_options)
+        )
+
+        # Spinbox
+        self.spinbox_minmax_depth = tk.Spinbox(
+            self.frame_ai_settings,
+            textvariable=self.depth_var,
+            width=5,
+            from_=1,
+            to=10,
+            increment=1,
+        )
+
+        # Labels
+        self.label_depth = tk.Label(self.frame_ai_settings, text="Depth:")
+
+        # Configure
         self.transient(parent)
         self.focus_set()
         self.grab_set()
         self.title("New Game")
-        self.board_view = board_view
+        self.frame.pack_configure(expand=True)
 
-        frame = tk.Frame(self)
-        frame.pack_configure(expand=True)
-
-        self.color_var = tk.StringVar(frame, Color.black.name)
-        color_frame = tk.LabelFrame(frame, text="Color")
-        color_frame.grid(row=0, column=0, sticky="n")
-        tk.Radiobutton(
-            color_frame, text="Black", variable=self.color_var, value=Color.black.name
-        ).grid(row=1, column=1, sticky="w")
-        tk.Radiobutton(
-            color_frame, text="White", variable=self.color_var, value=Color.white.name
-        ).grid(row=2, column=1, sticky="w")
-        tk.Radiobutton(
-            color_frame, text="Random", variable=self.color_var, value=None
-        ).grid(row=3, column=1, sticky="w")
-
-        self.ai_var = tk.StringVar(frame, ai_default)
-        ai_frame = tk.LabelFrame(frame, text="AI")
-        ai_frame.grid(row=0, column=1, sticky="n")
-        for i, ai_name in enumerate(ai_options):
-            tk.Radiobutton(
-                ai_frame, text=ai_name, variable=self.ai_var, value=ai_name
-            ).grid(row=i, column=0, sticky="w")
-
-        self.game_type = tk.StringVar(frame, GameType.computer.name)
-        opponent_frame = tk.LabelFrame(frame, text="Opponent")
-        opponent_frame.grid(row=0, column=2, sticky="n")
-        tk.Radiobutton(
-            opponent_frame,
-            text="Computer",
-            variable=self.game_type,
-            value=GameType.computer.name,
-        ).grid(row=1, column=0, sticky="w")
-        tk.Radiobutton(
-            opponent_frame,
-            text="Online",
-            variable=self.game_type,
-            value=GameType.online.name,
-            state=tk.DISABLED,
-        ).grid(row=2, column=0, sticky="w")
-
-        tk.Button(frame, text="Cancel", command=self.cancel).grid(row=1, column=0)
-        tk.Button(frame, text="Start", command=self.submit).grid(row=1, column=1)
-
+        # Bindings
         self.bind("<Escape>", lambda e: self.cancel())
         self.bind("<Return>", lambda e: self.submit())
+        self.ai_var.trace_add(
+            "write", callback=lambda *args: self._layout_ai_settings()
+        )
+        self.depth_var.trace_add(
+            "write",
+            callback=lambda *args: self.ai_settings.update(depth=self.depth_var.get()),
+        )
+
+        self._layout()
+
         self.wait_window(self)
         _logger.debug("NewGameDialog closed")
+
+    def _layout(self):
+        self.frame_color.grid(row=0, column=0, sticky="n")
+        self.radiobutton_color_black.grid(row=1, column=1, sticky="w")
+        self.radiobutton_color_white.grid(row=2, column=1, sticky="w")
+        self.radiobutton_color_random.grid(row=3, column=1, sticky="w")
+
+        self.frame_gametype.grid(row=0, column=1, sticky="n")
+        self.radiobutton_gametype_computer.grid(row=1, column=0, sticky="w")
+        self.radiobutton_gametype_online.grid(row=2, column=0, sticky="w")
+
+        self.frame_ai.grid(row=0, column=2, sticky="n")
+        self.optionmenu_ai.grid(row=0, column=0, sticky="w")
+        self._layout_ai_settings()
+
+        self.button_cancel.grid(row=1, column=0)
+        self.button_start.grid(row=1, column=1)
+
+    def _layout_ai_settings(self):
+        ai = AIOption[self.ai_var.get()]
+        if ai is AIOption.Randy:
+            self.frame_ai_settings.grid_remove()
+        elif ai is AIOption.Marty:
+            self.frame_ai_settings.grid(row=1, column=0)
+            self.label_depth.grid(row=0, column=0)
+            self.spinbox_minmax_depth.grid(row=0, column=1)
+        else:
+            assert False
 
     def cancel(self):
         _logger.debug("Cancel")
@@ -198,10 +262,15 @@ class NewGameDialog(tk.Toplevel):
         _my_player = GUIPlayer(my_color, self.board_view.redraw)
 
     def _make_opponent_player(self, color: Color):
-        game_type = GameType[self.game_type.get()]
+        game_type = GameType[self.game_type_var.get()]
         if game_type == GameType.computer:
-            OpponentPlayerClass = ai_options[self.ai_var.get()]
-            opponent = OpponentPlayerClass(color)
+            OpponentPlayerClass = ai_options[AIOption[self.ai_var.get()]]
+            _logger.debug(
+                "%s chosen with settings %s",
+                OpponentPlayerClass.__name__,
+                self.ai_settings,
+            )
+            opponent = OpponentPlayerClass(color, **self.ai_settings)
         else:
             assert False, f"{game_type} not implemented"
         return opponent
