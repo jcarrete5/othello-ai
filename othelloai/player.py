@@ -12,7 +12,7 @@ from .color import Color
 class Player(ABC):
     """Serves as an interface to communicate with a game."""
 
-    def __init__(self, color: Color):
+    def __init__(self, color: Color, **kwargs):
         """Construct a player with a color."""
         self._color = color
 
