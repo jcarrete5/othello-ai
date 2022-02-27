@@ -3,9 +3,9 @@
 import enum
 import logging
 import threading
-from copy import copy
 
 from .board import Board
+from .color import Color
 from .exception import IllegalMoveError, PassMove, PlayerInterrupted
 from .player import Player
 
@@ -16,6 +16,7 @@ class EventType(enum.Enum):
     """Events emitted by the game that players can observe."""
 
     board_change = enum.auto()
+    game_over = enum.auto()
 
 
 class GameType(enum.Enum):
@@ -53,20 +54,22 @@ class Game:
         Players alternate making moves on the board.
         """
         # Send initial board state
-        self._notify(EventType.board_change)
+        self._notify(EventType.board_change, self._board.copy())
 
         turn_player = (
             self._my_player
             if self._my_player.color is self._board.turn_player_color
             else self._opponent_player
         )
-        while not self._game_stopped_event.is_set():
+        while not self._game_stopped_event.is_set() and not self._is_game_over():
             _logger.info("Waiting for %s to make a move", turn_player)
 
             try:
-                move = turn_player.get_move(self._board.copy(), self._game_stopped_event)
+                move = turn_player.get_move(
+                    self._board.copy(), self._game_stopped_event
+                )
                 self._board.place(turn_player.color, move)
-                self._notify(EventType.board_change)
+                self._notify(EventType.board_change, self._board.copy())
                 _logger.info("%s played %s", turn_player, move)
             except PassMove:
                 _logger.info("%s passed their move", turn_player)
@@ -85,12 +88,43 @@ class Game:
             )
             self._board.swap_turn_players()
 
-    def _notify(self, e: EventType):
-        if e == EventType.board_change:
-            self._my_player.signal_board_change(copy(self._board))
-            self._opponent_player.signal_board_change(copy(self._board))
+    def _notify(self, e: EventType, *args):
+        if e is EventType.board_change:
+            (board,) = args
+            assert isinstance(board, Board), f"Incorrect arguments for {e}: {args}"
+            self._my_player.signal_board_change(board)
+            self._opponent_player.signal_board_change(board)
+        elif e is EventType.game_over:
+            color, board = args
+            assert (
+                isinstance(color, Color) or color is None
+            ), f"Incorrect arguments for {e}: {args}"
+            assert isinstance(board, Board), f"Incorrect arguments for {e}: {args}"
+            self._my_player.signal_game_over(color, board)
+            self._opponent_player.signal_game_over(color, board)
         else:
             assert False, f"{e} not implemented"
+
+    def _is_game_over(self) -> bool:
+        filled = self._board.empty_cells() == 0  # No empty cells i.e. all spaces filled
+        no_white = self._board.white == 0
+        no_black = self._board.black == 0
+
+        if filled:
+            white_count = self._board.white.bit_count()
+            black_count = self._board.black.bit_count()
+            if white_count > black_count:
+                self._notify(EventType.game_over, Color.white, self._board.copy())
+            elif white_count < black_count:
+                self._notify(EventType.game_over, Color.black, self._board.copy())
+            else:
+                self._notify(EventType.game_over, None, self._board.copy())
+        elif no_white:
+            self._notify(EventType.game_over, Color.black, self._board.copy())
+        elif no_black:
+            self._notify(EventType.game_over, Color.white, self._board.copy())
+
+        return filled or no_white or no_black
 
     def shutdown(self):
         """Cleanup resources required by the game and wait for completion."""

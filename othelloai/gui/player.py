@@ -17,9 +17,11 @@ class GUIPlayer(Player):
         self,
         color: Color,
         on_board_changed_callback: Callable[[Board], None],
+        on_game_over_callback: Callable[[Optional[Color], Board], None],
     ):
         super().__init__(color)
         self._on_board_changed_callback = on_board_changed_callback
+        self._on_game_over_callback = on_game_over_callback
         self._move: Optional[Position] = None
         self._move_event = threading.Event()
 
@@ -42,3 +44,6 @@ class GUIPlayer(Player):
 
     def _on_board_changed(self, board: Board):
         self._on_board_changed_callback(board)
+
+    def _on_game_over(self, color: Optional[Color], board: Board):
+        self._on_game_over_callback(color, board)

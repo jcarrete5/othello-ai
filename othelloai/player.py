@@ -2,11 +2,12 @@
 
 import threading
 from abc import ABC, abstractmethod
+from typing import Optional
 
-from .exception import IllegalMoveError, PassMove
 from .bitboard import Position
 from .board import Board
 from .color import Color
+from .exception import IllegalMoveError, PassMove
 
 
 class Player(ABC):
@@ -48,6 +49,19 @@ class Player(ABC):
 
     def _on_board_changed(self, board: Board):
         """Override to observe board change events."""
+        ...
+
+    def signal_game_over(self, color: Optional[Color], board: Board):
+        """
+        Signal when the game is over.
+
+        color is the color of the winner or None is the game ended in a draw.
+        board is the final state of the board.
+        """
+        self._on_game_over(color, board)
+
+    def _on_game_over(self, color: Optional[Color], board: Board):
+        """Override to observe game over events."""
         ...
 
     def __str__(self):

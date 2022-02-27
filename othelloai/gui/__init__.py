@@ -259,7 +259,11 @@ class NewGameDialog(tk.Toplevel):
             and Color[self.color_var.get()]
             or choose_from(list(Color))
         )
-        _my_player = GUIPlayer(my_color, self.board_view.redraw)
+        _my_player = GUIPlayer(
+            my_color,
+            self.board_view.redraw,
+            _show_winner,
+        )
 
     def _make_opponent_player(self, color: Color):
         game_type = GameType[self.game_type_var.get()]
@@ -274,6 +278,14 @@ class NewGameDialog(tk.Toplevel):
         else:
             assert False, f"{game_type} not implemented"
         return opponent
+
+
+def _show_winner(color: Optional[Color], _: Board):
+    if color is None:
+        msg = "The game is drawn!"
+    else:
+        msg = f"{color.name.capitalize()} has won!"
+    tk.messagebox.showinfo("Game Over", msg)
 
 
 def _init_widgets(root: tk.Tk):
