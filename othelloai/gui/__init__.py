@@ -22,7 +22,7 @@ class BoardView(tk.Canvas):
     """Represents the state of the board graphically."""
 
     def __init__(self, master):
-        self._cell_size = 40
+        self._cell_size = 80
         self._border_width = 0
         self._grid_line_width = 1
         super().__init__(
