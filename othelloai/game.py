@@ -1,9 +1,11 @@
 """Core game logic."""
 
+import cProfile
 import enum
 import logging
 import threading
 
+from .args import get_args
 from .board import Board
 from .color import Color
 from .exception import IllegalMoveError, PassMove, PlayerInterrupted
@@ -43,9 +45,15 @@ class Game:
         self._opponent_player = opponent_player
         self._board = board if board is not None else Board()
         self._runner = threading.Thread(
-            target=self.loop, name=f"GameThread ({Game.game_counter})"
+            target=self._profile_loop if get_args().is_profiling_enabled else self.loop,
+            name=f"GameThread ({Game.game_counter})",
         )
         self._game_stopped_event = threading.Event()
+
+    def _profile_loop(self):
+        with cProfile.Profile() as profile:
+            self.loop()
+        profile.dump_stats(get_args().profile_dir / "game-thread.profile")
 
     def loop(self):
         """
