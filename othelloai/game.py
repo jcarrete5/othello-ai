@@ -19,6 +19,7 @@ class EventType(enum.Enum):
 
     board_change = enum.auto()
     game_over = enum.auto()
+    turn_change = enum.auto()
 
 
 class GameType(enum.Enum):
@@ -63,6 +64,7 @@ class Game:
         """
         # Send initial board state
         self._notify(EventType.board_change, self._board.copy())
+        self._notify(EventType.turn_change, self._board.turn_player_color)
 
         turn_player = (
             self._my_player
@@ -83,6 +85,7 @@ class Game:
                 _logger.info("%s passed their move", turn_player)
             except IllegalMoveError:
                 _logger.info("%s attempted an illegal move", turn_player)
+                turn_player.signal_illegal_move_made()
                 continue
             except PlayerInterrupted:
                 _logger.debug("%s interrupted during their move", turn_player)
@@ -95,21 +98,26 @@ class Game:
                 else self._opponent_player
             )
             self._board.swap_turn_players()
+            self._notify(EventType.turn_change, self._board.turn_player_color)
 
     def _notify(self, e: EventType, *args):
+        err_str = f"Incorrect arguments for {e}: {args}"
         if e is EventType.board_change:
             (board,) = args
-            assert isinstance(board, Board), f"Incorrect arguments for {e}: {args}"
+            assert isinstance(board, Board), err_str
             self._my_player.signal_board_change(board)
             self._opponent_player.signal_board_change(board)
         elif e is EventType.game_over:
             color, board = args
-            assert (
-                isinstance(color, Color) or color is None
-            ), f"Incorrect arguments for {e}: {args}"
-            assert isinstance(board, Board), f"Incorrect arguments for {e}: {args}"
+            assert isinstance(color, Color) or color is None, err_str
+            assert isinstance(board, Board), err_str
             self._my_player.signal_game_over(color, board)
             self._opponent_player.signal_game_over(color, board)
+        elif e is EventType.turn_change:
+            (color,) = args
+            assert isinstance(color, Color), err_str
+            self._my_player.signal_turn_change(color)
+            self._opponent_player.signal_turn_change(color)
         else:
             assert False, f"{e} not implemented"
 

@@ -11,6 +11,7 @@ from .. import bitboard as bb
 from ..ai import ai_default, ai_options, AIOption
 from ..board import Board
 from ..color import Color, opposite_color
+from ..exception import OutOfTurnError
 from ..game import Game, GameType
 
 _logger = logging.getLogger(__name__)
@@ -54,7 +55,10 @@ class BoardView(tk.Canvas):
         _logger.debug("(row=%d, col=%d)", row, col)
         if 0 <= col < 8 and 0 <= row < 8:
             pos = bb.Position(int(row), int(col))
-            _my_player.make_move(pos)
+            try:
+                _my_player.make_move(pos)
+            except OutOfTurnError:
+                tk.messagebox.showwarning("Illegal Move", "It is not your turn!")
 
     def redraw(self, board: Board):
         _logger.debug("Redrawing\n%s", board)

@@ -11,3 +11,7 @@ class PassMove(Exception):
 
 class PlayerInterrupted(Exception):
     """Raised when a player is interrupted while making a move."""
+
+
+class OutOfTurnError(Exception):
+    """Raised when a player makes a move out of turn."""
