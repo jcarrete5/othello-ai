@@ -2,6 +2,7 @@
 
 import re
 from copy import copy
+from typing import Optional
 
 from . import bitboard as bb
 from .color import Color
@@ -114,6 +115,36 @@ class Board:
     def copy(self):
         """Return a shallow copy of this board."""
         return copy(self)
+
+    def check_game_over(self) -> tuple[bool, Optional[Color]]:
+        """
+        Check if the board is in a terminal state.
+
+        Returns a tuple of two values, the first of which is a boolean
+        that is True if the game is over, and the second is an optional Color
+        representing the winner of the game or none if the game ended in a
+        draw.
+        """
+        filled = self.empty_cells() == 0  # No empty cells i.e. all spaces filled
+        no_white = self.white == 0
+        no_black = self.black == 0
+
+        if filled:
+            white_count = self.white.bit_count()
+            black_count = self.black.bit_count()
+            if white_count > black_count:
+                winner = Color.white
+            elif white_count < black_count:
+                winner = Color.black
+            else:
+                winner = None
+            return True, winner
+        elif no_white:
+            return True, Color.black
+        elif no_black:
+            return True, Color.white
+
+        return False, None
 
     def __eq__(self, other: "Board"):
         return (

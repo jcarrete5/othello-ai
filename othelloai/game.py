@@ -122,25 +122,11 @@ class Game:
             assert False, f"{e} not implemented"
 
     def _is_game_over(self) -> bool:
-        filled = self._board.empty_cells() == 0  # No empty cells i.e. all spaces filled
-        no_white = self._board.white == 0
-        no_black = self._board.black == 0
-
-        if filled:
-            white_count = self._board.white.bit_count()
-            black_count = self._board.black.bit_count()
-            if white_count > black_count:
-                self._notify(EventType.game_over, Color.white, self._board.copy())
-            elif white_count < black_count:
-                self._notify(EventType.game_over, Color.black, self._board.copy())
-            else:
-                self._notify(EventType.game_over, None, self._board.copy())
-        elif no_white:
-            self._notify(EventType.game_over, Color.black, self._board.copy())
-        elif no_black:
-            self._notify(EventType.game_over, Color.white, self._board.copy())
-
-        return filled or no_white or no_black
+        game_over, winner = self._board.check_game_over()
+        if game_over:
+            self._notify(EventType.game_over, winner, self._board.copy())
+            return True
+        return False
 
     def shutdown(self):
         """Cleanup resources required by the game and wait for completion."""
