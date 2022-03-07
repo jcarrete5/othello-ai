@@ -307,6 +307,9 @@ def _init_widgets(root: tk.Tk):
     menu_bar.add_cascade(label="Game", menu=game_menu)
     root.config(menu=menu_bar)
 
+    # Immediately display a new game dialog
+    NewGameDialog(root, board_view)
+
 
 def loop():
     global _game
