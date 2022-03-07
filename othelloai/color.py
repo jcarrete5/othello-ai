@@ -6,8 +6,8 @@ import enum
 class Color(enum.Enum):
     """Represents the color of the pieces a player controls."""
 
-    black = enum.auto()
-    white = enum.auto()
+    black = 1
+    white = 2
 
 
 def opposite_color(c: Color) -> Color:
