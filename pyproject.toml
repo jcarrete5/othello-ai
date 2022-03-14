@@ -12,9 +12,10 @@ repository = "https://gitlab.com/jcarrete5/othello-ai"
 keywords = ["othello", "ai"]
 
 [tool.poetry.dependencies]
-python = "^3.9"
-gym = {version = "^0.22.0", optional = true}
+python = ">=3.9, <3.11"
 tf-agents = {version = "^0.12.0", optional = true}
+numpy = {version = "^1.22.2", optional = true}
+tensorflow = "^2.8.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.0.1"
@@ -24,7 +25,7 @@ black = "^22.1.0"
 coverage = "^6.3.2"
 
 [tool.poetry.extras]
-mldev = ["gym", "tf-agents"]
+mldev = ["tf-agents", "numpy"]
 
 [tool.poetry.scripts]
 othello = "othelloai.main:start_gui"
