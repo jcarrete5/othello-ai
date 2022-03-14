@@ -44,7 +44,7 @@ class OthelloEnvironment(PyEnvironment):
         valid_moves = self._board.valid_moves()
 
         if valid_moves:
-            i = floor(action * len(valid_moves))
+            i = round(action * len(valid_moves)) % len(valid_moves)
 
             # An action could equal exactly 1.0. In that case we need to subtract 1
             # from i to ensure it is within the bounds of valid_moves
