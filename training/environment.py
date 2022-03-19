@@ -1,5 +1,3 @@
-from math import floor
-
 import numpy as np
 from tf_agents.environments import PyEnvironment
 from tf_agents.specs import array_spec
@@ -17,15 +15,15 @@ class OthelloEnvironment(PyEnvironment):
         self._init_turn_player_color = init_turn_player_color
         self._board = Board(init_turn_player_color=init_turn_player_color)
         self._observation_spec = array_spec.BoundedArraySpec(
-            shape=(64,), dtype=np.int, minimum=0, maximum=2, name="observation"
+            shape=(64,), dtype=np.float32, minimum=0, maximum=2, name="observation"
         )
         self._action_spec = array_spec.BoundedArraySpec(
-            shape=(), dtype=np.float, minimum=0, maximum=1, name="action"
+            shape=(1,), dtype=np.float32, minimum=0, maximum=1, name="action"
         )
 
     def _observe_board(self):
         """Return an observation from the board."""
-        arr = np.zeros(shape=(64,), dtype=np.int)
+        arr = np.zeros(shape=(64,), dtype=np.float32)
         for i in range(64):
             mask = bb.pos_mask(i // 8, i % 8)
             if self._board.black & mask > 0:
@@ -41,16 +39,11 @@ class OthelloEnvironment(PyEnvironment):
         return self._action_spec
 
     def _step(self, action: types.NestedArray) -> ts.TimeStep:
+        action = action[0]
         valid_moves = self._board.valid_moves()
 
         if valid_moves:
             i = round(action * len(valid_moves)) % len(valid_moves)
-
-            # An action could equal exactly 1.0. In that case we need to subtract 1
-            # from i to ensure it is within the bounds of valid_moves
-            if i == len(valid_moves):
-                i -= 1
-
             pos = valid_moves[i]
             self._board.place(Color.black, pos)
 
