@@ -15,15 +15,15 @@ class OthelloEnvironment(PyEnvironment):
         self._init_turn_player_color = init_turn_player_color
         self._board = Board(init_turn_player_color=init_turn_player_color)
         self._observation_spec = array_spec.BoundedArraySpec(
-            shape=(64,), dtype=np.float32, minimum=0, maximum=2, name="observation"
+            shape=(64,), dtype=np.int32, minimum=0, maximum=2, name="observation"
         )
         self._action_spec = array_spec.BoundedArraySpec(
-            shape=(1,), dtype=np.float32, minimum=0, maximum=1, name="action"
+            shape=(), dtype=np.float32, minimum=0, maximum=1, name="action"
         )
 
     def _observe_board(self):
         """Return an observation from the board."""
-        arr = np.zeros(shape=(64,), dtype=np.float32)
+        arr = np.zeros(shape=(64,), dtype=np.int32)
         for i in range(64):
             mask = bb.pos_mask(i // 8, i % 8)
             if self._board.black & mask > 0:
@@ -39,7 +39,6 @@ class OthelloEnvironment(PyEnvironment):
         return self._action_spec
 
     def _step(self, action: types.NestedArray) -> ts.TimeStep:
-        action = action[0]
         valid_moves = self._board.valid_moves()
 
         if valid_moves:
