@@ -1,0 +1,12 @@
+BasedOnStyle: LLVM
+IndentWidth: 4
+
+Language: Cpp
+ColumnLimit: 120
+AlignConsecutiveAssignments: Consecutive
+AlwaysBreakTemplateDeclarations: Yes
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortEnumsOnASingleLine: False
+PointerAlignment: Left
+ReferenceAlignment: Pointer
+
