@@ -1,6 +1,10 @@
 # VS Code
 .vscode/settings.json
 
+# clangd
+compile_commands.json
+.cache/
+
 # Build/
 dist/
 

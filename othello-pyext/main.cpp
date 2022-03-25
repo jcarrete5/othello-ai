@@ -1,4 +1,5 @@
 #include "board.h"
+#include "aimax.h"
 
 #include <pybind11/pybind11.h>
 
@@ -32,9 +33,12 @@ PYBIND11_MODULE(othello_cpp, m) {
       .def(py::init())
       .def("set_up", &othello::GameBoard::set_up)
       .def("at", &othello::GameBoard::at)
+      .def("set", &othello::GameBoard::set)
       .def("vacant", &othello::GameBoard::vacant)
       .def("valid_moves", &othello::GameBoard::valid_moves)
       .def("place_piece", &othello::GameBoard::place_piece);
+
+  m.def("AIMax_best_move", &othello::AIMax::best_move);
 
 #ifdef VERSION_INFO
   m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);

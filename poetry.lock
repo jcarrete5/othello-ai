@@ -124,13 +124,13 @@ optional = false
 python-versions = "*"
 
 [[package]]
-name = "othello-cpp"
-version = "0.0.1"
-description = "Othello c++ extension"
+name = "othello_cpp"
+version = "0.0.2"
+description = ""
 category = "main"
 optional = false
 python-versions = ">=3.6"
-develop = true
+develop = false
 
 [package.extras]
 test = ["pytest (>=6.0)"]
@@ -257,7 +257,7 @@ python-versions = ">=3.6"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "836f174253e9ab9d354c342d101a85ad8ab2dd43dca4d247152286dbdda3ffc7"
+content-hash = "ea6ac286bde6d54eb6b4318873fc0c83c526c8ad75f8d841afa4456e2f75231d"
 
 [metadata.files]
 atomicwrites = [
@@ -364,7 +364,7 @@ mypy-extensions = [
     {file = "mypy_extensions-0.4.3-py2.py3-none-any.whl", hash = "sha256:090fedd75945a69ae91ce1303b5824f428daf5a028d2f6ab8a299250a846f15d"},
     {file = "mypy_extensions-0.4.3.tar.gz", hash = "sha256:2d82818f5bb3e369420cb3c4060a7970edba416647068eb4c5343488a6c604a8"},
 ]
-othello-cpp = []
+othello_cpp = []
 packaging = [
     {file = "packaging-21.3-py3-none-any.whl", hash = "sha256:ef103e05f519cdc783ae24ea4e2e0f508a9c99b2d4969652eed6a2e1ea5bd522"},
     {file = "packaging-21.3.tar.gz", hash = "sha256:dd47c42927d89ab911e606518907cc2d3a1f38bbd026385970643f9c5b8ecfeb"},
