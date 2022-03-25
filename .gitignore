@@ -7,6 +7,9 @@ compile_commands.json
 
 # Build/
 dist/
+build/
+Release/
+Debug/
 
 # Python
 .venv/
