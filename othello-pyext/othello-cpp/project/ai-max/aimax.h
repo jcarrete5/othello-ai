@@ -14,7 +14,7 @@ struct State {
 
 int evaluate(const Color color, const GameBoard& board);
 std::optional<State> _best_move_inner(const Color& color, const GameBoard& board, size_t depth = 0);
-std::optional<Position> best_move(const Color& color, const GameBoard& board);
+Position best_move(const Color& color, const GameBoard& board, size_t depth);
 
 } // namespace AIMax
 } // namespace othello

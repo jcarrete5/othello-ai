@@ -9,7 +9,7 @@ bool on_edge<RIGHT>(const uint64_t& bits) {
 }
 template <>
 bool on_edge<UPRIGHT>(const uint64_t& bits) {
-    return bits & TOP_RIGHT;
+    return bits & (TOP_EDGE | RIGHT_EDGE);
 }
 template <>
 bool on_edge<UP>(const uint64_t& bits) {
@@ -17,7 +17,7 @@ bool on_edge<UP>(const uint64_t& bits) {
 }
 template <>
 bool on_edge<UPLEFT>(const uint64_t& bits) {
-    return bits & TOP_LEFT;
+    return bits & (TOP_EDGE | LEFT_EDGE);
 }
 template <>
 bool on_edge<LEFT>(const uint64_t& bits) {
@@ -25,7 +25,7 @@ bool on_edge<LEFT>(const uint64_t& bits) {
 }
 template <>
 bool on_edge<DOWNLEFT>(const uint64_t& bits) {
-    return bits & BOT_LEFT;
+    return bits & (BOT_EDGE | LEFT_EDGE);
 }
 template <>
 bool on_edge<DOWN>(const uint64_t& bits) {
@@ -33,7 +33,7 @@ bool on_edge<DOWN>(const uint64_t& bits) {
 }
 template <>
 bool on_edge<DOWNRIGHT>(const uint64_t& bits) {
-    return bits & BOT_RIGHT;
+    return bits & (BOT_EDGE | RIGHT_EDGE);
 }
 
 template <>

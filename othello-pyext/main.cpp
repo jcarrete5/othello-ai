@@ -45,4 +45,5 @@ PYBIND11_MODULE(othello_cpp, m) {
 #else
   m.attr("__version__") = "dev";
 #endif
+
 }

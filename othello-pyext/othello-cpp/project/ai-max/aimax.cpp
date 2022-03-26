@@ -25,7 +25,7 @@ std::optional<State> _best_move_inner(const Color& color, const GameBoard& board
     for (auto move : potential_moves) {
         GameBoard next_board{board};
         next_board.place_piece(color, move);
-        auto next = _best_move_inner(color, next_board, depth - 1);
+        auto next = _best_move_inner(opposite_color(color), next_board, depth - 1);
         if (!next) {
             current.value = evaluate(color, next_board);
         } else {
@@ -39,11 +39,9 @@ std::optional<State> _best_move_inner(const Color& color, const GameBoard& board
     return current;
 }
 
-std::optional<Position> best_move(const Color& color, const GameBoard& board) {
-    if (auto state = _best_move_inner(color, board, 5))
-        return state->move;
-    else
-        return {};
+Position best_move(const Color& color, const GameBoard& board, size_t depth) {
+    auto state = _best_move_inner(color, board, depth);
+    return state->move;
 }
 
 } // namespace AIMax

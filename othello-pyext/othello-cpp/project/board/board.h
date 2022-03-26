@@ -15,6 +15,14 @@ enum Color {
     MAX_COLOR
 };
 
+inline Color opposite_color(const Color& color) {
+    if (color == BLACK)
+        return WHITE;
+    if (color == WHITE)
+        return BLACK;
+    return NONE;
+}
+
 enum Direction {
     MIN_DIRECTION = 0,
     RIGHT         = MIN_DIRECTION,
@@ -160,14 +168,16 @@ class GameBoard {
         return (c == WHITE) ? white : black;
     }
     const Bits& pieces_(Color c) const {
-        return pieces_(c);
+        return (c == WHITE) ? white : black;
     }
     Bits& opposite_pieces_(Color c) {
         return (c == WHITE) ? black : white;
     }
     const Bits& opposite_pieces_(Color c) const {
-        return opposite_pieces_(c);
+        return (c == WHITE) ? black : white;
     }
+
+    friend std::ostream& operator<<(std::ostream& os, const GameBoard& board);
 
   private:
     template <Direction D>
@@ -194,8 +204,6 @@ class GameBoard {
         valid_move |= directional_capture_<DOWNRIGHT>(c, p);
         return valid_move;
     }
-
-    friend std::ostream& operator<<(std::ostream& os, const GameBoard& board);
 };
 
 template <Direction D>
@@ -233,13 +241,13 @@ class GameBoard::State {
           bits_(bit_board::position_mask(start)) {}
 
     void dilate();
-    bool should_commit();
+    bool should_commit() const;
     bool should_keep_dilating();
-    Bits bits();
+    const Bits& bits() const;
 
   private:
     Bits start_;
-    Bits& my_pieces_;
+    Bits my_pieces_;
     Bits vacant_;
 
     Bits bits_;
@@ -254,7 +262,7 @@ void GameBoard::State<D>::dilate() {
 }
 
 template <Direction D>
-bool GameBoard::State<D>::should_commit() {
+bool GameBoard::State<D>::should_commit() const {
     return capped_;
 }
 
@@ -268,7 +276,7 @@ bool GameBoard::State<D>::should_keep_dilating() {
 }
 
 template <Direction D>
-GameBoard::Bits GameBoard::State<D>::bits() {
+const GameBoard::Bits& GameBoard::State<D>::bits() const {
     return bits_;
 }
 
