@@ -11,6 +11,11 @@ def test_place_illegal_move():
     pos = bb.Position(0, 0)
     with pytest.raises(IllegalMoveError):
         board.place(Color.white, pos)
+'''
+    pos = bb.Position(3, 3)
+    with pytest.raises(IllegalMoveError):
+        board.place(Color.white, pos)
+'''
 
 
 def test_place_and_capture():

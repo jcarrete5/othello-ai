@@ -126,9 +126,9 @@ class Board:
         def symbol_at(row: int, col: int) -> str:
             mask = bb.pos_mask(row, col)
             if self.white & mask != 0:
-                return "\u2591"
-            elif self.black & mask != 0:
                 return "\u2588"
+            elif self.black & mask != 0:
+                return "\u2591"
             else:
                 return "-"
 

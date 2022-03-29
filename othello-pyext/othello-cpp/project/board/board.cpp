@@ -1,6 +1,17 @@
 #include "board.h"
 
 namespace othello {
+
+Position operator+(const Position& lhs, const Position& rhs) {
+    return Position{lhs.row + rhs.row, lhs.col + rhs.col};
+}
+Position operator-(const Position& lhs, const Position& rhs) {
+    return Position{lhs.row - rhs.row, lhs.col - rhs.col};
+}
+bool operator==(const Position& lhs, const Position& rhs) {
+    return (lhs.row == rhs.row && lhs.col == rhs.col);
+}
+
 namespace bit_board {
 
 template <>
@@ -68,19 +79,19 @@ uint64_t shift<LEFT>(const uint64_t& bits, const size_t& n) {
 }
 template <>
 uint64_t shift<UPRIGHT>(const uint64_t& bits, const size_t& n) {
-    return shift<RIGHT>(shift<UP>(bits,n), n);
+    return shift<RIGHT>(shift<UP>(bits, n), n);
 }
 template <>
 uint64_t shift<UPLEFT>(const uint64_t& bits, const size_t& n) {
-    return shift<LEFT>(shift<UP>(bits,n), n);
+    return shift<LEFT>(shift<UP>(bits, n), n);
 }
 template <>
 uint64_t shift<DOWNLEFT>(const uint64_t& bits, const size_t& n) {
-    return shift<LEFT>(shift<DOWN>(bits,n), n);
+    return shift<LEFT>(shift<DOWN>(bits, n), n);
 }
 template <>
 uint64_t shift<DOWNRIGHT>(const uint64_t& bits, const size_t& n) {
-    return shift<RIGHT>(shift<DOWN>(bits,n), n);
+    return shift<RIGHT>(shift<DOWN>(bits, n), n);
 }
 
 std::vector<Position> to_positions(const uint64_t& bits) {
@@ -126,6 +137,10 @@ std::ostream& operator<<(std::ostream& os, const GameBoard& board) {
         os << "\n";
     }
     return os;
+}
+
+void display(const GameBoard& board) {
+    std::cout << board << std::endl;
 }
 
 } // namespace othello

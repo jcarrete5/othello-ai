@@ -39,6 +39,10 @@ enum Direction {
 struct Position {
     size_t row;
     size_t col;
+
+    friend Position operator+(const Position& lhs, const Position& rhs);
+    friend Position operator-(const Position& lhs, const Position& rhs);
+    friend bool operator==(const Position& lhs, const Position& rhs);
 };
 
 namespace bit_board {
