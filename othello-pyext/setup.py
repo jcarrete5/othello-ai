@@ -121,7 +121,7 @@ class CMakeBuild(build_ext):
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
     name="othello_cpp",
-    version="0.0.12",
+    version="0.0.13",
     author="Derek McBlane",
     author_email="mcblanederek@gmail.com",
     description="Othello c++ extension",

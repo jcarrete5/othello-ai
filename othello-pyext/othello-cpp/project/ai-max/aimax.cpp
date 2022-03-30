@@ -40,7 +40,6 @@ std::optional<State> _best_move_inner(const Color& color, const GameBoard& board
 }
 
 Position best_move(const Color& color, const GameBoard& board, size_t depth) {
-    //std::cout << "called best_move(color={" << color << "}, board={" << board << "}, depth={" << depth << "})" << std::endl;
     auto state = _best_move_inner(color, board, depth);
     return state->move;
 }

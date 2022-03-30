@@ -38,7 +38,7 @@ PYBIND11_MODULE(othello_cpp, m) {
       .def("valid_moves", &othello::GameBoard::valid_moves)
       .def("place_piece", &othello::GameBoard::place_piece);
 
-  m.def("AIMax_best_move", &othello::AIMax::best_move);
+  m.def("AIMax_best_move", &othello::AIMax::best_move, py::call_guard<py::gil_scoped_release>());
 
 #ifdef VERSION_INFO
   m.attr("__version__") = MACRO_STRINGIFY(VERSION_INFO);
