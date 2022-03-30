@@ -45,6 +45,7 @@ class Game:
         self._my_player = my_player
         self._opponent_player = opponent_player
         self._board = board if board is not None else Board()
+        self._no_moves = False
         self._runner = threading.Thread(
             target=self._profile_loop if get_args().is_profiling_enabled else self.loop,
             name=f"GameThread ({Game.game_counter})",
@@ -66,6 +67,7 @@ class Game:
         self._notify(EventType.board_change, self._board.copy())
         self._notify(EventType.turn_change, self._board.turn_player_color)
 
+        passed_previous = False
         turn_player = (
             self._my_player
             if self._my_player.color is self._board.turn_player_color
@@ -80,8 +82,13 @@ class Game:
                 )
                 self._board.place(turn_player.color, move)
                 self._notify(EventType.board_change, self._board.copy())
+                passed_previous = False
                 _logger.info("%s played %s", turn_player, move)
             except PassMove:
+                if passed_previous:
+                    self._no_moves = True
+                else:
+                    passed_previous = True
                 _logger.info("%s passed their move", turn_player)
             except IllegalMoveError:
                 _logger.info("%s attempted an illegal move", turn_player)
@@ -126,7 +133,7 @@ class Game:
         no_white = self._board.white == 0
         no_black = self._board.black == 0
 
-        if filled:
+        if filled or self._no_moves:
             white_count = self._board.white.bit_count()
             black_count = self._board.black.bit_count()
             if white_count > black_count:
