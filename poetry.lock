@@ -125,7 +125,7 @@ python-versions = "*"
 
 [[package]]
 name = "othello_cpp"
-version = "0.0.13"
+version = "0.0.14"
 description = ""
 category = "main"
 optional = false

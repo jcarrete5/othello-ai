@@ -12,36 +12,31 @@ int evaluate(const Color color, const GameBoard& board) {
     return (bit_board::count(my_pieces) - bit_board::count(opp_pieces));
 }
 
-std::optional<State> _best_move_inner(const Color& color, const GameBoard& board, size_t depth) {
-    if (depth == 0)
-        return {};
-
+State _best_move_inner(const Color& color, const GameBoard& board, size_t depth) {
+    State best;
+    best.value = evaluate(color, board);
+    best.move = {};
     std::vector<Position> potential_moves = board.valid_moves(color);
-    if (potential_moves.empty())
-        return {};
+    if (depth == 0 || potential_moves.empty())
+        return best;
 
-    State current;
-    current.value = std::numeric_limits<int>::min();
+    best.move = *potential_moves.begin();
+    best.value = std::numeric_limits<int>::min();
     for (auto move : potential_moves) {
         GameBoard next_board{board};
         next_board.place_piece(color, move);
-        auto next = _best_move_inner(opposite_color(color), next_board, depth - 1);
-        if (!next) {
-            current.value = evaluate(color, next_board);
-        } else {
-            next->value *= -1;
-            if (next->value > current.value) {
-                current.value = next->value;
-                current.move  = move;
-            }
+        State next = _best_move_inner(opposite_color(color), next_board, depth - 1);
+        if (next.value > best.value) {
+            best.value = next.value;
+            best.move  = move;
         }
     }
-    return current;
+    return best;
 }
 
 Position best_move(const Color& color, const GameBoard& board, size_t depth) {
-    auto state = _best_move_inner(color, board, depth);
-    return state->move;
+    State state = _best_move_inner(color, board, depth);
+    return *state.move;
 }
 
 } // namespace AIMax
