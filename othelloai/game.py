@@ -81,7 +81,6 @@ class Game:
                     self._board.copy(), self._game_stopped_event
                 )
                 self._board.place(turn_player.color, move)
-                self._notify(EventType.board_change, self._board.copy())
                 passed_previous = False
                 _logger.info("%s played %s", turn_player, move)
             except PassMove:
@@ -106,6 +105,7 @@ class Game:
             )
             self._board.swap_turn_players()
             self._notify(EventType.turn_change, self._board.turn_player_color)
+            self._notify(EventType.board_change, self._board.copy())
 
     def _notify(self, e: EventType, *args):
         err_str = f"Incorrect arguments for {e}: {args}"

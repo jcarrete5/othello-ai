@@ -71,13 +71,18 @@ class BoardView(tk.Canvas):
                 y_off = (
                     r * self._cell_size + r * self._grid_line_width + self._border_width
                 )
+
+                empty_cell_color = "#060"
+                if bb.Position(r,c) in board.valid_moves():
+                    empty_cell_color = "#080"
+
                 # Draw green empty cell
                 self.create_rectangle(
                     x_off,
                     y_off,
                     self._cell_size + x_off,
                     self._cell_size + y_off,
-                    fill="#060",
+                    fill=empty_cell_color,
                 )
 
                 # Draw piece in cell
