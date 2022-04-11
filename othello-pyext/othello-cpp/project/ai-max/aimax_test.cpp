@@ -10,13 +10,13 @@ TEST(AIMax, Simple) {
     std::cout << board << std::endl;
     Position move;
 
-    move = othello::AIMax::best_move_<BLACK>(board, 3);
+    move = othello::AIMax::color_best_move(BLACK, board, 3);
     board.place_piece(BLACK, move);
 
-    move = othello::AIMax::best_move_<WHITE>(board, 3);
+    move = othello::AIMax::color_best_move(WHITE, board, 3);
     board.place_piece(WHITE, move);
 
-    move = othello::AIMax::best_move_<BLACK>(board, 3);
+    move = othello::AIMax::color_best_move(BLACK, board, 3);
     board.place_piece(BLACK, move);
 
     std::cout << board << std::endl;
