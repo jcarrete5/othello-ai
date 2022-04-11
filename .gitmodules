@@ -1,0 +1,4 @@
+[submodule "othello-pyext/external/pybind11"]
+	path = othello-pyext/external/pybind11
+	url = git@github.com:pybind/pybind11.git
+	branch = stable
