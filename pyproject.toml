@@ -13,6 +13,7 @@ keywords = ["othello", "ai"]
 
 [tool.poetry.dependencies]
 python = "^3.9"
+othello-cpp = {path = "othello-pyext"}
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.0.1"
