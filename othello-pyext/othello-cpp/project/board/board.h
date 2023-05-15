@@ -1,5 +1,6 @@
-#ifndef OTHELLO_BOARD_H
-#define OTHELLO_BOARD_H
+#pragma once
+
+#include "bit_board.h"
 
 #include <array>
 #include <bitset>
@@ -32,163 +33,17 @@ template <Color C>
 inline constexpr Color opposite_color_v = opposite_color<C>::value;
 
 inline Color get_opposite_color(const Color& color) {
-    if (color == BLACK) return WHITE;
-    if (color == WHITE) return BLACK;
+    if (color == BLACK)
+        return WHITE;
+    if (color == WHITE)
+        return BLACK;
     return NONE;
 }
 
-enum Direction {
-    MIN_DIRECTION = 0,
-    RIGHT         = MIN_DIRECTION,
-    UPRIGHT,
-    UP,
-    UPLEFT,
-    LEFT,
-    DOWNLEFT,
-    DOWN,
-    DOWNRIGHT,
-    MAX_DIRECTION
-};
-
-struct Position {
-    size_t row;
-    size_t col;
-
-    friend Position operator+(const Position& lhs, const Position& rhs);
-    friend Position operator-(const Position& lhs, const Position& rhs);
-    friend bool operator==(const Position& lhs, const Position& rhs);
-};
-
-class BitBoard {
-  public:
-    using bits_type           = uint64_t;
-    static constexpr size_t N = 8;
-
-    BitBoard() : BitBoard(0) {}
-    BitBoard(const BitBoard& other) : BitBoard(other.bits) {}
-    BitBoard(const uint64_t bits) : bits(bits) {}
-
-    inline static bits_type position_mask(const Position& p) {
-        return (TOP_LEFT >> (p.row * 8) >> (p.col));
-    }
-
-    inline bool test(const Position& p) const {
-        return bits & position_mask(p);
-    }
-
-    inline bool count() const {
-        return std::bitset<N * N>(bits).count();
-    }
-
-    inline void set(const Position& p) {
-        bits |= position_mask(p);
-    }
-
-    inline void reset(const Position& p) {
-        bits &= ~position_mask(p);
-    }
-
-    template <Direction>
-    bool on_edge() const;
-
-    template <Direction D>
-    BitBoard shift(const size_t& n = 1) const;
-
-    template <Direction D>
-    BitBoard dilate(const size_t& n = 1) {
-        BitBoard dilated{bits};
-        for (int i = 0; i < n; i++) {
-            dilated |= dilated.shift<D>(n);
-        }
-        return dilated;
-    }
-
-    std::vector<Position> to_positions() const;
-    std::bitset<N * N> to_bitset() const;
-
-    std::string to_string() const {
-        return std::bitset<N * N>(bits).to_string();
-    }
-
-    inline bool operator==(const BitBoard& other) const {
-        return bits == other.bits;
-    }
-    inline bool operator!=(const BitBoard& other) const {
-        return bits != other.bits;
-    }
-    inline BitBoard& operator<<=(size_t n) {
-        bits <<= n;
-        return *this;
-    }
-    inline BitBoard operator<<(size_t n) {
-        BitBoard result{bits};
-        result.bits <<= n;
-        return result;
-    }
-    inline BitBoard& operator>>=(size_t n) {
-        bits >>= n;
-        return *this;
-    }
-    inline BitBoard operator>>(size_t n) {
-        BitBoard result{bits};
-        result.bits >>= n;
-        return result;
-    }
-    inline BitBoard operator|(const BitBoard& other) const {
-        BitBoard result{bits};
-        result |= other;
-        return result;
-    }
-    inline BitBoard& operator|=(const BitBoard& other) {
-        bits |= other.bits;
-        return *this;
-    }
-    inline BitBoard operator&(const BitBoard& other) const {
-        BitBoard result{bits};
-        result &= other;
-        return result;
-    }
-    inline BitBoard& operator&=(const BitBoard& other) {
-        bits &= other.bits;
-        return *this;
-    }
-    inline BitBoard operator^(const BitBoard& other) const {
-        return bits ^ other.bits;
-    }
-    inline BitBoard operator~() const {
-        return ~bits;
-    }
-    operator bool() const {
-        return bits;
-    }
-
-  private:
-    bits_type bits;
-
-    static constexpr const uint64_t TOP_RIGHT =
-        0b00000001'00000000'00000000'00000000'00000000'00000000'00000000'00000000;
-    static constexpr const uint64_t TOP_LEFT =
-        0b10000000'00000000'00000000'00000000'00000000'00000000'00000000'00000000;
-    static constexpr const uint64_t BOT_LEFT =
-        0b00000000'00000000'00000000'00000000'00000000'00000000'00000000'10000000;
-    static constexpr const uint64_t BOT_RIGHT =
-        0b00000000'00000000'00000000'00000000'00000000'00000000'00000000'00000001;
-    static constexpr const uint64_t TOP_EDGE =
-        0b11111111'00000000'00000000'00000000'00000000'00000000'00000000'00000000;
-    static constexpr const uint64_t BOT_EDGE =
-        0b00000000'00000000'00000000'00000000'00000000'00000000'00000000'11111111;
-    static constexpr const uint64_t LEFT_EDGE =
-        0b10000000'10000000'10000000'10000000'10000000'10000000'10000000'10000000;
-    static constexpr const uint64_t RIGHT_EDGE =
-        0b00000001'00000001'00000001'00000001'00000001'00000001'00000001'00000001;
-    static constexpr const uint64_t NEG_SLOPE =
-        0b10000000'01000000'00100000'00010000'00001000'00000100'00000010'00000001;
-    static constexpr const uint64_t POS_SLOPE =
-        0b00000001'00000010'00000100'00001000'00010000'00100000'01000000'10000000;
-};
-
 class GameBoard {
   public:
+    using Position = BitBoard::Position;
+
     GameBoard() {
         set_up();
     }
@@ -222,22 +77,22 @@ class GameBoard {
     void set(const Position& p, const Color& c) {
         if (c == WHITE) {
             white.set(p);
-            black.reset(p);
+            black.clear(p);
         } else if (c == BLACK) {
             black.set(p);
-            white.reset(p);
+            white.clear(p);
         } else if (c == NONE) {
-            white.reset(p);
-            black.reset(p);
+            white.clear(p);
+            black.clear(p);
         }
     }
 
     std::vector<Position> valid_moves(const Color& c) const {
-        BitBoard moves = (directional_valid_moves_<RIGHT>(c) | directional_valid_moves_<UPRIGHT>(c) |
-                          directional_valid_moves_<UP>(c) | directional_valid_moves_<UPLEFT>(c) |
-                          directional_valid_moves_<LEFT>(c) | directional_valid_moves_<DOWNLEFT>(c) |
-                          directional_valid_moves_<DOWN>(c) | directional_valid_moves_<DOWNRIGHT>(c));
-        return moves.to_positions();
+        BitBoard moves = (directional_valid_moves_<right>(c) | directional_valid_moves_<upright>(c) |
+                          directional_valid_moves_<up>(c) | directional_valid_moves_<upleft>(c) |
+                          directional_valid_moves_<left>(c) | directional_valid_moves_<downleft>(c) |
+                          directional_valid_moves_<down>(c) | directional_valid_moves_<downright>(c));
+        return moves.to_position_vector();
     }
 
     bool place_piece(Color c, const Position& p) {
@@ -288,14 +143,14 @@ class GameBoard {
 
     bool capture_(const Color& c, const Position& p) {
         bool valid_move = false;
-        valid_move |= directional_capture_<RIGHT>(c, p);
-        valid_move |= directional_capture_<UPRIGHT>(c, p);
-        valid_move |= directional_capture_<UP>(c, p);
-        valid_move |= directional_capture_<UPLEFT>(c, p);
-        valid_move |= directional_capture_<LEFT>(c, p);
-        valid_move |= directional_capture_<DOWNLEFT>(c, p);
-        valid_move |= directional_capture_<DOWN>(c, p);
-        valid_move |= directional_capture_<DOWNRIGHT>(c, p);
+        valid_move |= directional_capture_<right>(c, p);
+        valid_move |= directional_capture_<upright>(c, p);
+        valid_move |= directional_capture_<up>(c, p);
+        valid_move |= directional_capture_<upleft>(c, p);
+        valid_move |= directional_capture_<left>(c, p);
+        valid_move |= directional_capture_<downleft>(c, p);
+        valid_move |= directional_capture_<down>(c, p);
+        valid_move |= directional_capture_<downright>(c, p);
         return valid_move;
     }
 };
@@ -303,9 +158,9 @@ class GameBoard {
 template <Direction D>
 BitBoard GameBoard::directional_valid_moves_(const Color& c) const {
     BitBoard moves{0};
-    BitBoard candidates{opposite_pieces_(c) & pieces_(c).shift<D>()};
-    while (candidates) {
-        BitBoard shifted = candidates.shift<D>();
+    BitBoard candidates{opposite_pieces_(c) & BitBoard::shift<D>(pieces_(c))};
+    while (!candidates.empty()) {
+        const auto shifted = BitBoard::shift<D>(candidates);
         moves |= vacant() & shifted;
         candidates = opposite_pieces_(c) & shifted;
     }
@@ -331,8 +186,7 @@ template <Direction D>
 class GameBoard::State {
   public:
     State(const Color& color, GameBoard& board, const Position& start)
-        : my_pieces_(board.pieces_(color)), vacant_(board.vacant()), start_(BitBoard::position_mask(start)),
-          bits_(BitBoard::position_mask(start)) {}
+        : my_pieces_(board.pieces_(color)), vacant_(board.vacant()), start_{start}, bits_{start} {}
 
     void dilate();
     bool should_commit() const;
@@ -364,8 +218,8 @@ template <Direction D>
 bool GameBoard::State<D>::should_keep_dilating() {
     BitBoard selected_ = ~start_ & bits_;
     on_edge_           = bits_.on_edge<D>();
-    capped_            = my_pieces_ & selected_;
-    on_empty_          = vacant_ & selected_;
+    capped_            = my_pieces_.test_any(selected_);
+    on_empty_          = vacant_.test_any(selected_);
     return !(on_edge_ || capped_ || on_empty_);
 }
 
@@ -375,5 +229,3 @@ const BitBoard& GameBoard::State<D>::bits() const {
 }
 
 } // namespace othello
-
-#endif // OTHELLO_BOARD_H
