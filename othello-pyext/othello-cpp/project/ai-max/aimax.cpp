@@ -6,11 +6,11 @@
 namespace othello {
 namespace ai_max {
 
-int evaluate_(const Color C, const GameBoard& board) {
+static int evaluate(const Color C, const GameBoard& board) {
     return (board.pieces_(C).count() - board.opposite_pieces_(C).count());
 }
 
-GameBoard get_next_board_(const Color C, const GameBoard& board, const GameBoard::Position& move) {
+static GameBoard get_next_board(const Color C, const GameBoard& board, const GameBoard::Position& move) {
     GameBoard next_board{board};
     next_board.place_piece(C, move);
     return next_board;
@@ -18,16 +18,16 @@ GameBoard get_next_board_(const Color C, const GameBoard& board, const GameBoard
 
 // Negamax non-root node evaluation
 // Includes only value
-int best_move_inner_(const Color C, const GameBoard& board, size_t depth) {
+static int best_move_inner(const Color C, const GameBoard& board, size_t depth) {
     std::vector<GameBoard::Position> potential_moves = board.valid_moves(C);
     if (potential_moves.empty() || depth == 0) {
-        return evaluate_(C, board);
+        return evaluate(C, board);
     }
 
     int best_value = std::numeric_limits<int>::min();
     for (auto move : potential_moves) {
-        GameBoard next_board{get_next_board_(C, board, move)};
-        int value = -best_move_inner_(C, next_board, depth - 1);
+        GameBoard next_board{get_next_board(C, board, move)};
+        int value = -best_move_inner(C, next_board, depth - 1);
         if (value > best_value) {
             best_value = value;
         }
@@ -44,8 +44,8 @@ GameBoard::Position color_best_move(const Color C, const GameBoard& board, size_
     GameBoard::Position best_move;
     int best_value = std::numeric_limits<int>::min();
     for (auto move : potential_moves) {
-        GameBoard next_board{get_next_board_(C, board, move)};
-        int value = -best_move_inner_(C, next_board, depth - 1);
+        GameBoard next_board{get_next_board(C, board, move)};
+        int value = -best_move_inner(C, next_board, depth - 1);
         if (value > best_value) {
             best_value = value;
             best_move  = move;
