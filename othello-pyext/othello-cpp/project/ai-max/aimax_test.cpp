@@ -8,7 +8,7 @@ using namespace othello;
 TEST(AIMax, Simple) {
     GameBoard board;
     std::cout << board << std::endl;
-    GameBoard::Position move;
+    Position move;
 
     move = othello::ai_max::color_best_move(Color::black, board, 3);
     board.place_piece(Color::black, move);

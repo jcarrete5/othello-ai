@@ -19,10 +19,13 @@ class CPPBoard(othello_cpp.GameBoard):
         for row in range(0,8):
             for col in range(0,8):
                 py_pos = Position(row, col)
-                py_col = color_at(board, py_pos)
+                py_color = color_at(board, py_pos)
                 cpp_pos = othello_cpp.Position(row, col)
-                cpp_col = py_color_to_cpp_color(py_col)
-                cpp_board.set(cpp_pos, cpp_col)
+                cpp_color = py_color_to_cpp_color(py_color)
+                if cpp_color is None:
+                    cpp_board.clear(cpp_pos)
+                else:
+                    cpp_board.set(cpp_pos, cpp_color)
         return cpp_board
 
     def __init__(self, *args, **kwargs):
@@ -51,12 +54,10 @@ def color_at(board: Board, pos: Position):
 
 def py_color_to_cpp_color(color: Optional[Color]):
     if color == Color.white:
-        return othello_cpp.Color.WHITE
-    elif color == Color.black:
-        return othello_cpp.Color.BLACK
-    else:
-        return othello_cpp.Color.NONE
-
+        return othello_cpp.Color.White
+    if color == Color.black:
+        return othello_cpp.Color.Black
+    return None
 
 def cpp_position_to_py_position(position: othello_cpp.Position):
     return Position(position.row, position.col)

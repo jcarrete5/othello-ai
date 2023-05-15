@@ -41,21 +41,21 @@ inline Color get_opposite_color(const Color& color) {
     }
 }
 
+using Position = BitBoard::Position;
+
 class GameBoard {
   public:
-    using Position = BitBoard::Position;
-
     GameBoard() {
         set_up();
     }
 
-    void clear() {
-        white = BitBoard(0);
-        black = BitBoard(0);
+    void clear_all() {
+        white.clear_all();
+        black.clear_all();
     }
 
     void set_up() {
-        clear();
+        clear_all();
         white.set({3, 3});
         white.set({4, 4});
         black.set({4, 3});

@@ -17,7 +17,7 @@ TEST(Board, Setup) {
 
 TEST(Board, ValidMoves) {
     GameBoard board;
-    std::vector<GameBoard::Position> moves = {{3, 2}, {2, 2}, {2, 3}, {2, 4}, {4, 5}, {5, 4}, {1, 2}};
+    std::vector<Position> moves = {{3, 2}, {2, 2}, {2, 3}, {2, 4}, {4, 5}, {5, 4}, {1, 2}};
     Color turn_color                       = Color::black;
     for (auto move : moves) {
         std::cout << board << std::endl;
@@ -35,7 +35,7 @@ TEST(Board, ValidMoves) {
 
 TEST(Board, InvalidMoves) {
     GameBoard board;
-    std::vector<GameBoard::Position> moves = {{0, 0}, {8, 8}};
+    std::vector<Position> moves = {{0, 0}, {8, 8}};
     for (auto move : moves) {
         std::cout << board << std::endl;
 
