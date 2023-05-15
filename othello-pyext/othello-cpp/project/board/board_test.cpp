@@ -9,16 +9,16 @@ namespace othello {
 
 TEST(Board, Setup) {
     GameBoard board;
-    ASSERT_EQ(board.at({3, 3}), WHITE);
-    ASSERT_EQ(board.at({4, 4}), WHITE);
-    ASSERT_EQ(board.at({3, 4}), BLACK);
-    ASSERT_EQ(board.at({4, 3}), BLACK);
+    ASSERT_EQ(*board.at({3, 3}), Color::white);
+    ASSERT_EQ(*board.at({4, 4}), Color::white);
+    ASSERT_EQ(*board.at({3, 4}), Color::black);
+    ASSERT_EQ(*board.at({4, 3}), Color::black);
 }
 
 TEST(Board, ValidMoves) {
     GameBoard board;
     std::vector<GameBoard::Position> moves = {{3, 2}, {2, 2}, {2, 3}, {2, 4}, {4, 5}, {5, 4}, {1, 2}};
-    Color turn_color            = BLACK;
+    Color turn_color                       = Color::black;
     for (auto move : moves) {
         std::cout << board << std::endl;
 
@@ -39,7 +39,7 @@ TEST(Board, InvalidMoves) {
     for (auto move : moves) {
         std::cout << board << std::endl;
 
-        auto valid_moves   = board.valid_moves(BLACK);
+        auto valid_moves   = board.valid_moves(Color::black);
         auto move_in_valid = std::find(valid_moves.begin(), valid_moves.end(), move);
         ASSERT_EQ(move_in_valid, valid_moves.end());
     }

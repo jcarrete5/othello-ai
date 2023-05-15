@@ -2,20 +2,20 @@
 
 #include "bit_board.h"
 
+#include <cstddef>
+
 #include <array>
 #include <bitset>
-#include <cstddef>
 #include <iostream>
+#include <optional>
 #include <string>
 #include <vector>
 
 namespace othello {
 
-enum Color {
-    NONE,
-    BLACK,
-    WHITE,
-    MAX_COLOR
+enum class Color {
+    black,
+    white,
 };
 
 template <Color C>
@@ -24,20 +24,21 @@ struct opposite_color {
 };
 
 template <>
-inline const Color opposite_color<WHITE>::value = BLACK;
+inline const Color opposite_color<Color::white>::value = Color::black;
 
 template <>
-inline const Color opposite_color<BLACK>::value = WHITE;
+inline const Color opposite_color<Color::black>::value = Color::white;
 
 template <Color C>
 inline constexpr Color opposite_color_v = opposite_color<C>::value;
 
 inline Color get_opposite_color(const Color& color) {
-    if (color == BLACK)
-        return WHITE;
-    if (color == WHITE)
-        return BLACK;
-    return NONE;
+    switch (color) {
+    case Color::black:
+        return Color::white;
+    case Color::white:
+        return Color::black;
+    }
 }
 
 class GameBoard {
@@ -61,30 +62,30 @@ class GameBoard {
         black.set({3, 4});
     }
 
-    Color at(const Position& p) const {
-        bool is_white = white.test(p);
-        bool is_black = black.test(p);
-        if (!is_white && !is_black)
-            return NONE;
-        else if (is_white)
-            return WHITE;
-        else if (is_black)
-            return BLACK;
-        else
-            return MAX_COLOR;
+    std::optional<Color> at(const Position& p) const {
+        if (white.test(p))
+            return Color::white;
+        if (black.test(p))
+            return Color::black;
+        return {};
     }
 
     void set(const Position& p, const Color& c) {
-        if (c == WHITE) {
-            white.set(p);
-            black.clear(p);
-        } else if (c == BLACK) {
+        switch (c) {
+        case Color::black:
             black.set(p);
             white.clear(p);
-        } else if (c == NONE) {
-            white.clear(p);
+            break;
+        case Color::white:
+            white.set(p);
             black.clear(p);
+            break;
         }
+    }
+
+    void clear(const Position& p) {
+        white.clear(p);
+        black.clear(p);
     }
 
     std::vector<Position> valid_moves(const Color& c) const {
@@ -109,17 +110,17 @@ class GameBoard {
     template <Color C>
     const BitBoard& t_opposite_pieces_() const;
 
-    BitBoard& pieces_(Color c) {
-        return (c == WHITE) ? white : black;
+    BitBoard& pieces_(const Color c) {
+        return (c == Color::white) ? white : black;
     }
-    const BitBoard& pieces_(Color c) const {
-        return (c == WHITE) ? white : black;
+    const BitBoard& pieces_(const Color c) const {
+        return (c == Color::white) ? white : black;
     }
-    BitBoard& opposite_pieces_(Color c) {
-        return (c == WHITE) ? black : white;
+    BitBoard& opposite_pieces_(const Color c) {
+        return (c == Color::white) ? black : white;
     }
-    const BitBoard& opposite_pieces_(Color c) const {
-        return (c == WHITE) ? black : white;
+    const BitBoard& opposite_pieces_(const Color c) const {
+        return (c == Color::white) ? black : white;
     }
 
     friend std::ostream& operator<<(std::ostream& os, const GameBoard& board);
