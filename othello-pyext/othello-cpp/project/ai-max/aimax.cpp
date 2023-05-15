@@ -1,6 +1,8 @@
 #include "aimax.h"
 #include "board.h"
 
+#include <cassert>
+
 namespace othello {
 namespace AIMax {
 
