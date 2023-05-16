@@ -9,6 +9,9 @@
 namespace py = pybind11;
 using namespace othello;
 
+using PositionIntConst = int (Position::*)() const;
+using PositionIntRef = int &(Position::*)();
+
 PYBIND11_MODULE(othello_cpp, m) {
   m.doc() = R"pbdoc(
         .. currentmodule:: othello_cpp
@@ -24,12 +27,10 @@ PYBIND11_MODULE(othello_cpp, m) {
 
   py::class_<Position>(m, "Position")
       .def(py::init<int, int>())
-      .def_property(
-          "row", static_cast<int (Position::*)() const>(&Position::x),
-          static_cast<int &(Position::*)()>(&Position::x))
-      .def_property(
-          "col", static_cast<int (Position::*)() const>(&Position::y),
-          static_cast<int &(Position::*)()>(&Position::y));
+      .def_property("row", static_cast<PositionIntConst>(&Position::x),
+                    static_cast<PositionIntRef>(&Position::x))
+      .def_property("col", static_cast<PositionIntConst>(&Position::y),
+                    static_cast<PositionIntRef>(&Position::y));
 
   py::class_<GameBoard>(m, "GameBoard")
       .def(py::init())
@@ -39,7 +40,9 @@ PYBIND11_MODULE(othello_cpp, m) {
       .def("clear", &GameBoard::clear)
       .def("clear_all", &GameBoard::clear_all)
       .def("valid_moves", &GameBoard::valid_moves)
-      .def("place_piece", &GameBoard::place_piece);
+      .def("place_piece", &GameBoard::place_piece)
+      .def("white_positions", &GameBoard::white_positions)
+      .def("black_positions", &GameBoard::black_positions);
 
   m.def("AIMax_best_move", &ai_max::color_best_move,
         py::call_guard<py::gil_scoped_release>());
