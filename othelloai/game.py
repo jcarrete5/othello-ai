@@ -118,6 +118,9 @@ class Game:
             color, board = args
             assert isinstance(color, Color) or color is None, err_str
             assert isinstance(board, Board), err_str
+            white_count = self._board.white.bit_count()
+            black_count = self._board.black.bit_count()
+            _logger.info("Game Over. white: %d, black: %d", white_count, black_count)
             self._my_player.signal_game_over(color, board)
             self._opponent_player.signal_game_over(color, board)
         elif e is EventType.turn_change:
