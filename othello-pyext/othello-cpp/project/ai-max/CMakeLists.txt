@@ -9,6 +9,11 @@ target_sources(AIMaxTest PRIVATE aimax_test.cpp)
 target_include_directories(AIMaxTest PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 target_link_libraries(AIMaxTest PRIVATE gtest_main)
 target_link_libraries(AIMaxTest PRIVATE AIMax)
+if(ENABLE_PROFILING)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(gperftools_profiler REQUIRED IMPORTED_TARGET libprofiler)
+    target_link_libraries(AIMaxTest PRIVATE PkgConfig::gperftools_profiler)
+endif()
 
 gtest_discover_tests(AIMaxTest)
 
