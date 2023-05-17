@@ -11,9 +11,8 @@ class Args:
 
     def __init__(self):
         self.profile_dir: Optional[Path] = None
-        self.parse_args()
 
-    def parse_args(self):
+    def parse_args(self, argv: Optional[list[str]] = None):
         parser = ArgumentParser()
         parser.add_argument(
             "-p",
@@ -22,7 +21,7 @@ class Args:
             type=Path,
             dest="profile_dir",
         )
-        parser.parse_args(namespace=self)
+        parser.parse_args(argv, namespace=self)
 
     @property
     def is_profiling_enabled(self) -> bool:
