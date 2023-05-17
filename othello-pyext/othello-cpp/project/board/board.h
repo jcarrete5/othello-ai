@@ -52,20 +52,18 @@ class GameBoard
     friend class Game;
 
   public:
-    GameBoard() {}
-
-    std::optional<Color> at(Position p) const;
-    void set(Color c, Position p);
-    void set(Color c, BitBoard p);
-    void clear(const Position p)
+    [[nodiscard]] std::optional<Color> at(Position position) const;
+    void set(Color color, Position position);
+    void set(Color color, BitBoard position);
+    void clear(const Position position)
     {
-        white_.clear(p);
-        black_.clear(p);
+        white_.clear(position);
+        black_.clear(position);
     }
-    void clear(const BitBoard p)
+    void clear(const BitBoard position)
     {
-        white_.clear(p);
-        black_.clear(p);
+        white_.clear(position);
+        black_.clear(position);
     }
     void clear_all()
     {
@@ -73,58 +71,58 @@ class GameBoard
         black_.clear_all();
     }
 
-    std::size_t white_count() const
+    [[nodiscard]] std::size_t white_count() const
     {
         return white_.count();
     }
-    std::size_t black_count() const
+    [[nodiscard]] std::size_t black_count() const
     {
         return black_.count();
     }
-    std::size_t color_count(const Color c) const
+    [[nodiscard]] std::size_t color_count(const Color color) const
     {
-        return pieces(c).count();
+        return pieces(color).count();
     }
 
-    std::vector<Position> white_positions() const
+    [[nodiscard]] std::vector<Position> white_positions() const
     {
         return white_.to_position_vector();
     }
-    std::vector<Position> black_positions() const
+    [[nodiscard]] std::vector<Position> black_positions() const
     {
         return black_.to_position_vector();
     }
 
     friend std::ostream& operator<<(std::ostream& os, const GameBoard& board);
-    std::string to_string() const;
+    [[nodiscard]] std::string to_string() const;
 
   private:
     BitBoard white_;
     BitBoard black_;
 
     template <Color C>
-    const BitBoard& pieces() const;
+    [[nodiscard]] const BitBoard& pieces() const;
     template <Color C>
-    const BitBoard& opposite_pieces() const;
+    [[nodiscard]] const BitBoard& opposite_pieces() const;
 
-    BitBoard& pieces(const Color c)
+    BitBoard& pieces(const Color color)
     {
-        return (c == Color::white) ? white_ : black_;
+        return (color == Color::white) ? white_ : black_;
     }
-    const BitBoard& pieces(const Color c) const
+    [[nodiscard]] const BitBoard& pieces(const Color color) const
     {
-        return (c == Color::white) ? white_ : black_;
+        return (color == Color::white) ? white_ : black_;
     }
-    BitBoard& opposite_pieces(const Color c)
+    BitBoard& opposite_pieces(const Color color)
     {
-        return pieces(get_opposite_color(c));
+        return pieces(get_opposite_color(color));
     }
-    const BitBoard& opposite_pieces(const Color c) const
+    [[nodiscard]] const BitBoard& opposite_pieces(const Color color) const
     {
-        return pieces(get_opposite_color(c));
+        return pieces(get_opposite_color(color));
     }
 
-    BitBoard vacant() const
+    [[nodiscard]] BitBoard vacant() const
     {
         return ~(white_ | black_);
     }
@@ -149,25 +147,25 @@ class Game
         board_.set(Color::black, {3, 4});
     }
 
-    Color active_color() const
+    [[nodiscard]] Color active_color() const
     {
         return active_color_;
     }
 
-    const GameBoard& board() const
+    [[nodiscard]] const GameBoard& board() const
     {
         return board_;
     }
 
-    bool has_valid_move() const
+    [[nodiscard]] bool has_valid_move() const
     {
         return !valid_moves_bitboard().empty();
     }
-    std::set<Position> valid_moves() const;
-    BitBoard valid_moves_bitboard() const;
+    [[nodiscard]] std::set<Position> valid_moves() const;
+    [[nodiscard]] BitBoard valid_moves_bitboard() const;
 
-    void place_piece(Position p);
-    void place_piece(BitBoard p);
+    void place_piece(Position position);
+    void place_piece(BitBoard position);
     void next_turn()
     {
         active_color_ = get_opposite_color(active_color());
@@ -179,7 +177,7 @@ class Game
         }
     }
 
-    bool is_game_over()
+    [[nodiscard]] bool is_game_over() const
     {
         return pass_count_ == 2;
     }
@@ -200,36 +198,36 @@ class Game
     class State;
 
     template <Direction D>
-    BitBoard directional_valid_moves(Color c) const;
+    [[nodiscard]] BitBoard directional_valid_moves(Color color) const;
 
     template <Direction D>
-    void directional_capture(BitBoard p);
+    void directional_capture(BitBoard position);
 };
 
 template <Direction D>
-BitBoard Game::directional_valid_moves(const Color c) const
+BitBoard Game::directional_valid_moves(const Color color) const
 {
     BitBoard moves;
-    BitBoard candidates{board_.opposite_pieces(c) & BitBoard::shift<D>(board_.pieces(c))};
+    BitBoard candidates{board_.opposite_pieces(color) & BitBoard::shift<D>(board_.pieces(color))};
     while (!candidates.empty()) {
         const auto shifted = BitBoard::shift<D>(candidates);
         moves |= board_.vacant() & shifted;
-        candidates = board_.opposite_pieces(c) & shifted;
+        candidates = board_.opposite_pieces(color) & shifted;
     }
     return moves;
 }
 
 template <Direction D>
-void Game::directional_capture(const BitBoard p)
+void Game::directional_capture(const BitBoard position)
 {
-    const Color c = active_color();
-    State<D> s{c, board_, p};
-    while (s.should_keep_dilating()) {
-        s.dilate();
+    const Color color = active_color();
+    State<D> state{color, board_, position};
+    while (state.should_keep_dilating()) {
+        state.dilate();
     }
-    if (s.should_commit()) {
-        board_.pieces(c).set(s.bits());
-        board_.opposite_pieces(c).clear(s.bits());
+    if (state.should_commit()) {
+        board_.pieces(color).set(state.bits());
+        board_.opposite_pieces(color).clear(state.bits());
     }
 }
 
@@ -242,9 +240,9 @@ class Game::State
     {}
 
     void dilate();
-    bool should_commit() const;
+    [[nodiscard]] bool should_commit() const;
     bool should_keep_dilating();
-    const BitBoard& bits() const;
+    [[nodiscard]] const BitBoard& bits() const;
 
   private:
     BitBoard start_;
@@ -272,10 +270,10 @@ bool Game::State<D>::should_commit() const
 template <Direction D>
 bool Game::State<D>::should_keep_dilating()
 {
-    BitBoard selected_ = ~start_ & bits_;
+    BitBoard selected = ~start_ & bits_;
     on_edge_ = bits_.on_edge<D>();
-    capped_ = my_pieces_.test_any(selected_);
-    on_empty_ = vacant_.test_any(selected_);
+    capped_ = my_pieces_.test_any(selected);
+    on_empty_ = vacant_.test_any(selected);
     return !(on_edge_ || capped_ || on_empty_);
 }
 

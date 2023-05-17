@@ -3,8 +3,7 @@
 
 #include <cassert>
 
-namespace othello {
-namespace ai_max {
+namespace othello::ai_max {
 
 const static auto min_score = std::numeric_limits<int>::min();
 const static auto max_score = std::numeric_limits<int>::max();
@@ -14,7 +13,7 @@ static int evaluate(const Game& game)
     const auto& board = game.board();
     const auto my_color = game.active_color();
     const auto opponent_color = get_opposite_color(my_color);
-    return board.color_count(my_color) - board.color_count(opponent_color);
+    return static_cast<int>(board.color_count(my_color)) - static_cast<int>(board.color_count(opponent_color));
 }
 
 static Game get_next_state(const Game& game, const BitBoard move)
@@ -92,5 +91,4 @@ Position best_move(const Game& game, size_t depth)
     return best_move;
 }
 
-} // namespace ai_max
-} // namespace othello
+} // namespace othello::ai_max
