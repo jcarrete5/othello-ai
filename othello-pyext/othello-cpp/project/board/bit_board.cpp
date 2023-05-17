@@ -70,22 +70,22 @@ bool BitBoard::on_edge<downleft>() const
 bool BitBoard::on_edge(const Direction direction) const
 {
     switch (direction) {
-    case right:
-        return on_edge<right>();
-    case upright:
-        return on_edge<upright>();
-    case up:
-        return on_edge<up>();
-    case upleft:
-        return on_edge<upleft>();
-    case left:
-        return on_edge<left>();
-    case downleft:
-        return on_edge<downleft>();
-    case down:
-        return on_edge<down>();
-    case downright:
-        return on_edge<downright>();
+    case Direction::right:
+        return on_edge<Direction::right>();
+    case Direction::upright:
+        return on_edge<Direction::upright>();
+    case Direction::up:
+        return on_edge<Direction::up>();
+    case Direction::upleft:
+        return on_edge<Direction::upleft>();
+    case Direction::left:
+        return on_edge<Direction::left>();
+    case Direction::downleft:
+        return on_edge<Direction::downleft>();
+    case Direction::down:
+        return on_edge<Direction::down>();
+    case Direction::downright:
+        return on_edge<Direction::downright>();
     default:
         assert(!"invalid direction");
         return {};
@@ -105,22 +105,22 @@ BitBoard BitBoard::shift(BitBoard board, const Direction direction, const size_t
 BitBoard& BitBoard::dilate(const Direction direction, const size_t n)
 {
     switch (direction) {
-    case right:
-        return dilate<right>(n);
-    case upright:
-        return dilate<upright>(n);
-    case up:
-        return dilate<up>(n);
-    case upleft:
-        return dilate<upleft>(n);
-    case left:
-        return dilate<left>(n);
-    case downleft:
-        return dilate<downleft>(n);
-    case down:
-        return dilate<down>(n);
-    case downright:
-        return dilate<downright>(n);
+    case Direction::right:
+        return dilate<Direction::right>(n);
+    case Direction::upright:
+        return dilate<Direction::upright>(n);
+    case Direction::up:
+        return dilate<Direction::up>(n);
+    case Direction::upleft:
+        return dilate<Direction::upleft>(n);
+    case Direction::left:
+        return dilate<Direction::left>(n);
+    case Direction::downleft:
+        return dilate<Direction::downleft>(n);
+    case Direction::down:
+        return dilate<Direction::down>(n);
+    case Direction::downright:
+        return dilate<Direction::downright>(n);
     }
     assert(!"invalid direction");
     return *this;
@@ -184,22 +184,22 @@ BitBoard& BitBoard::shift_assign<Direction::downleft>(const size_t n)
 BitBoard& BitBoard::shift_assign(const Direction direction, const size_t n)
 {
     switch (direction) {
-    case right:
-        return shift_assign<right>(n);
-    case upright:
-        return shift_assign<upright>(n);
-    case up:
-        return shift_assign<up>(n);
-    case upleft:
-        return shift_assign<upleft>(n);
-    case left:
-        return shift_assign<left>(n);
-    case downleft:
-        return shift_assign<downleft>(n);
-    case down:
-        return shift_assign<down>(n);
-    case downright:
-        return shift_assign<downright>(n);
+    case Direction::right:
+        return shift_assign<Direction::right>(n);
+    case Direction::upright:
+        return shift_assign<Direction::upright>(n);
+    case Direction::up:
+        return shift_assign<Direction::up>(n);
+    case Direction::upleft:
+        return shift_assign<Direction::upleft>(n);
+    case Direction::left:
+        return shift_assign<Direction::left>(n);
+    case Direction::downleft:
+        return shift_assign<Direction::downleft>(n);
+    case Direction::down:
+        return shift_assign<Direction::down>(n);
+    case Direction::downright:
+        return shift_assign<Direction::downright>(n);
     }
     assert(!"invalid direction");
     return *this;
@@ -223,13 +223,13 @@ BitBoard& BitBoard::shift_assign(const BitBoard::Position relative_offset)
 BitBoard BitBoard::neighbors_cardinal(const Position& position)
 {
     auto board = BitBoard{position};
-    return shift<right>(board) | shift<up>(board) | shift<left>(board) | shift<down>(board);
+    return shift<Direction::right>(board) | shift<Direction::up>(board) | shift<Direction::left>(board) | shift<Direction::down>(board);
 }
 
 BitBoard BitBoard::neighbors_diagonal(const Position& position)
 {
     auto board = BitBoard{position};
-    return shift<upright>(board) | shift<upleft>(board) | shift<downleft>(board) | shift<downright>(board);
+    return shift<Direction::upright>(board) | shift<Direction::upleft>(board) | shift<Direction::downleft>(board) | shift<Direction::downright>(board);
 }
 
 BitBoard BitBoard::neighbors_cardinal_and_diagonal(const Position& position)

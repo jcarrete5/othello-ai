@@ -8,7 +8,7 @@
 #include <set>
 #include <vector>
 
-enum Direction {
+enum class Direction {
     right,
     upright,
     up,

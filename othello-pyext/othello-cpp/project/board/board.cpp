@@ -92,14 +92,14 @@ void Game::place_piece(const Position& p) {
     if (!is_valid_move(p)) {
         throw std::invalid_argument{"invalid move"};
     }
-    directional_capture<right>(p);
-    directional_capture<upright>(p);
-    directional_capture<up>(p);
-    directional_capture<upleft>(p);
-    directional_capture<left>(p);
-    directional_capture<downleft>(p);
-    directional_capture<down>(p);
-    directional_capture<downright>(p);
+    directional_capture<Direction::right>(p);
+    directional_capture<Direction::upright>(p);
+    directional_capture<Direction::up>(p);
+    directional_capture<Direction::upleft>(p);
+    directional_capture<Direction::left>(p);
+    directional_capture<Direction::downleft>(p);
+    directional_capture<Direction::down>(p);
+    directional_capture<Direction::downright>(p);
     board_.set(active_color(), p);
 
     active_color_ = get_opposite_color(active_color());
