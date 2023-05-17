@@ -6,6 +6,9 @@
 namespace othello {
 namespace ai_max {
 
+const static auto min_score = std::numeric_limits<int>::min();
+const static auto max_score = std::numeric_limits<int>::max();
+
 static int evaluate(const Game& game) {
     const auto& board         = game.board();
     const auto my_color       = game.active_color();
@@ -27,11 +30,34 @@ static int best_move_inner(const Game& game, size_t depth) {
         return evaluate(game);
     }
 
-    auto best_value = std::numeric_limits<int>::min();
+    auto best_value = min_score;
     for (auto move : potential_moves) {
-        auto value = -best_move_inner(get_next_state(game, move), depth - 1);
+        const auto value = -best_move_inner(get_next_state(game, move), depth - 1);
         if (value > best_value) {
             best_value = value;
+        }
+    }
+    return best_value;
+}
+
+// Negamax non-root node evaluation
+// Includes only value
+// Alpha-Beta pruning optimization
+static int best_move_inner_a_b(const Game& game, int alpha, int beta, size_t depth) {
+    auto potential_moves = game.valid_moves();
+    if (potential_moves.empty() || depth == 0) {
+        return evaluate(game);
+    }
+
+    auto best_value = std::numeric_limits<int>::min();
+    for (auto move : potential_moves) {
+        const auto value = -best_move_inner_a_b(get_next_state(game, move), -beta, -alpha, depth - 1);
+        if (value > best_value) {
+            best_value = value;
+        }
+        alpha = std::max(alpha, value);
+        if (alpha > beta) {
+            break;
         }
     }
     return best_value;
@@ -44,12 +70,18 @@ Position best_move(const Game& game, size_t depth) {
     assert(!potential_moves.empty());
 
     Position best_move;
-    auto best_value = std::numeric_limits<int>::min();
+    auto best_value = min_score;
+    int alpha = min_score;
+    int beta = max_score;
     for (auto move : potential_moves) {
-        int value = -best_move_inner(get_next_state(game, move), depth - 1);
+        const int value = -best_move_inner_a_b(get_next_state(game, move), -beta, -alpha, depth - 1);
         if (value > best_value) {
             best_value = value;
             best_move  = move;
+        }
+        alpha = std::max(alpha, value);
+        if (alpha > beta) {
+            break;
         }
     }
     return best_move;
