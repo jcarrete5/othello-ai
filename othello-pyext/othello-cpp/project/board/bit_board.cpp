@@ -20,49 +20,49 @@ BitBoard::BitBoard(const std::string& board)
 }
 
 template <>
-bool BitBoard::on_edge<right>() const
+bool BitBoard::on_edge<Direction::right>() const
 {
     return test_any(make_right_edge());
 }
 
 template <>
-bool BitBoard::on_edge<upright>() const
+bool BitBoard::on_edge<Direction::upright>() const
 {
     return test_any(make_top_right_edge());
 }
 
 template <>
-bool BitBoard::on_edge<up>() const
+bool BitBoard::on_edge<Direction::up>() const
 {
     return test_any(make_top_edge());
 }
 
 template <>
-bool BitBoard::on_edge<upleft>() const
+bool BitBoard::on_edge<Direction::upleft>() const
 {
     return test_any(make_top_left_edge());
 }
 
 template <>
-bool BitBoard::on_edge<left>() const
+bool BitBoard::on_edge<Direction::left>() const
 {
     return test_any(make_left_edge());
 }
 
 template <>
-bool BitBoard::on_edge<downright>() const
+bool BitBoard::on_edge<Direction::downright>() const
 {
     return test_any(make_bottom_right_edge());
 }
 
 template <>
-bool BitBoard::on_edge<down>() const
+bool BitBoard::on_edge<Direction::down>() const
 {
     return test_any(make_bottom_edge());
 }
 
 template <>
-bool BitBoard::on_edge<downleft>() const
+bool BitBoard::on_edge<Direction::downleft>() const
 {
     return test_any(make_bottom_left_edge());
 }
@@ -223,13 +223,15 @@ BitBoard& BitBoard::shift_assign(const BitBoard::Position relative_offset)
 BitBoard BitBoard::neighbors_cardinal(const Position& position)
 {
     auto board = BitBoard{position};
-    return shift<Direction::right>(board) | shift<Direction::up>(board) | shift<Direction::left>(board) | shift<Direction::down>(board);
+    return shift<Direction::right>(board) | shift<Direction::up>(board) | shift<Direction::left>(board) |
+           shift<Direction::down>(board);
 }
 
 BitBoard BitBoard::neighbors_diagonal(const Position& position)
 {
     auto board = BitBoard{position};
-    return shift<Direction::upright>(board) | shift<Direction::upleft>(board) | shift<Direction::downleft>(board) | shift<Direction::downright>(board);
+    return shift<Direction::upright>(board) | shift<Direction::upleft>(board) | shift<Direction::downleft>(board) |
+           shift<Direction::downright>(board);
 }
 
 BitBoard BitBoard::neighbors_cardinal_and_diagonal(const Position& position)
@@ -254,6 +256,20 @@ std::vector<BitBoard::Position> BitBoard::to_position_vector() const
         for (int row = 0; row < board_size; row++) {
             Position position{row, column};
             if (test(position)) {
+                positions.push_back(position);
+            }
+        }
+    }
+    return positions;
+}
+
+std::vector<BitBoard> BitBoard::to_bitboard_position_vector() const
+{
+    std::vector<BitBoard> positions;
+    for (int column = 0; column < board_size; column++) {
+        for (int row = 0; row < board_size; row++) {
+            BitBoard position{Position{row, column}};
+            if (test_any(position)) {
                 positions.push_back(position);
             }
         }

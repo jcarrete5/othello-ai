@@ -46,6 +46,7 @@ class CMakeBuild(build_ext):
             f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}",
             f"-DPYTHON_EXECUTABLE={sys.executable}",
             f"-DCMAKE_BUILD_TYPE={cfg}",  # not used on MSVC, but no harm
+            f"-DENABLE_PROFILING=ON",
         ]
         build_args = []
         # Adding CMake arguments set as environment variable
@@ -121,7 +122,7 @@ class CMakeBuild(build_ext):
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
     name="othello_cpp",
-    version="0.1.6",
+    version="0.1.7",
     author="Derek McBlane",
     author_email="mcblanederek@gmail.com",
     description="Othello C++ extension",

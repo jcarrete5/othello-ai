@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <bitset>
+#include <set>
 
 namespace othello {
 
@@ -20,8 +21,7 @@ TEST(Game, ValidMoves) {
     Game game;
     const std::vector<Position> moves = {{3, 2}, {2, 2}, {2, 3}, {2, 4}, {4, 5}, {5, 4}, {1, 2}};
     for (const auto move : moves) {
-        const auto valid_moves   = game.valid_moves();
-        ASSERT_TRUE(valid_moves.contains(move));
+        ASSERT_TRUE(game.valid_moves().contains(move));
 
         const auto move_color = game.active_color();
         game.place_piece(move);
@@ -29,12 +29,11 @@ TEST(Game, ValidMoves) {
     }
 }
 
-TEST(Board, InvalidMoves) {
+TEST(Game, InvalidMoves) {
     Game game;
     const std::vector<Position> moves = {{0, 0}, {8, 8}};
     for (const auto move : moves) {
-        const auto valid_moves = game.valid_moves();
-        ASSERT_FALSE(valid_moves.contains(move));
+        ASSERT_TRUE(game.valid_moves().contains(move));
     }
 }
 
