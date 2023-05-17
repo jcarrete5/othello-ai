@@ -220,7 +220,7 @@ class NewGameDialog(tk.Toplevel):
         ai = AIOption[self.ai_var.get()]
         if ai is AIOption.Randy:
             self.frame_ai_settings.grid_remove()
-        elif ai is AIOption.Marty or ai is AIOption.CPP:
+        elif ai is AIOption.Marty or ai is AIOption.Smarty:
             self.frame_ai_settings.grid(row=1, column=0)
             self.label_depth.grid(row=0, column=0)
             self.spinbox_minmax_depth.grid(row=0, column=1)
