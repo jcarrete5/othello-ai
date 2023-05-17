@@ -1,5 +1,7 @@
 #include "board.h"
 
+#include <sstream>
+
 namespace othello {
 
 std::optional<Color> GameBoard::at(const Position& p) const {
@@ -10,7 +12,7 @@ std::optional<Color> GameBoard::at(const Position& p) const {
     return {};
 }
 
-void GameBoard::set(const Position& p, const Color c) {
+void GameBoard::set(const Color c, const Position& p) {
     switch (c) {
     case Color::black:
         black_.set(p);
@@ -21,35 +23,6 @@ void GameBoard::set(const Position& p, const Color c) {
         black_.clear(p);
         break;
     }
-}
-
-std::vector<Position> GameBoard::valid_moves(const Color c) const {
-    BitBoard moves = (directional_valid_moves<right>(c) | directional_valid_moves<upright>(c) |
-                      directional_valid_moves<up>(c) | directional_valid_moves<upleft>(c) |
-                      directional_valid_moves<left>(c) | directional_valid_moves<downleft>(c) |
-                      directional_valid_moves<down>(c) | directional_valid_moves<downright>(c));
-    return moves.to_position_vector();
-}
-
-bool GameBoard::place_piece(Color c, const Position& p) {
-    bool captured = capture(c, p);
-    if (captured) {
-        set(p, c);
-    }
-    return captured;
-}
-
-bool GameBoard::capture(const Color c, const Position& p) {
-    bool valid_move = false;
-    valid_move |= directional_capture<right>(c, p);
-    valid_move |= directional_capture<upright>(c, p);
-    valid_move |= directional_capture<up>(c, p);
-    valid_move |= directional_capture<upleft>(c, p);
-    valid_move |= directional_capture<left>(c, p);
-    valid_move |= directional_capture<downleft>(c, p);
-    valid_move |= directional_capture<down>(c, p);
-    valid_move |= directional_capture<downright>(c, p);
-    return valid_move;
 }
 
 template <>
@@ -70,6 +43,12 @@ const BitBoard& GameBoard::opposite_pieces<Color::white>() const {
 template <>
 const BitBoard& GameBoard::opposite_pieces<Color::black>() const {
     return white_;
+}
+
+std::string GameBoard::to_string() const {
+    std::stringstream ss;
+    ss << *this;
+    return ss.str();
 }
 
 std::ostream& operator<<(std::ostream& os, const GameBoard& board) {
@@ -95,8 +74,35 @@ std::ostream& operator<<(std::ostream& os, const GameBoard& board) {
     return os;
 }
 
+
 void display(const GameBoard& board) {
     std::cout << board << std::endl;
+}
+
+std::set<Position> Game::valid_moves() const {
+    const Color c = active_color();
+    BitBoard moves = (directional_valid_moves<right>(c) | directional_valid_moves<upright>(c) |
+                      directional_valid_moves<up>(c) | directional_valid_moves<upleft>(c) |
+                      directional_valid_moves<left>(c) | directional_valid_moves<downleft>(c) |
+                      directional_valid_moves<down>(c) | directional_valid_moves<downright>(c));
+    return moves.to_position_set();
+}
+
+void Game::place_piece(const Position& p) {
+    if (!is_valid_move(p)) {
+        throw std::invalid_argument{"invalid move"};
+    }
+    directional_capture<right>(p);
+    directional_capture<upright>(p);
+    directional_capture<up>(p);
+    directional_capture<upleft>(p);
+    directional_capture<left>(p);
+    directional_capture<downleft>(p);
+    directional_capture<down>(p);
+    directional_capture<downright>(p);
+    board_.set(active_color(), p);
+
+    active_color_ = get_opposite_color(active_color());
 }
 
 } // namespace othello

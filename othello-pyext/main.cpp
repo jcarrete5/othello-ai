@@ -34,17 +34,25 @@ PYBIND11_MODULE(othello_cpp, m) {
 
   py::class_<GameBoard>(m, "GameBoard")
       .def(py::init())
-      .def("set_up", &GameBoard::set_up)
       .def("at", &GameBoard::at)
       .def("set", &GameBoard::set)
       .def("clear", &GameBoard::clear)
       .def("clear_all", &GameBoard::clear_all)
-      .def("valid_moves", &GameBoard::valid_moves)
-      .def("place_piece", &GameBoard::place_piece)
       .def("white_positions", &GameBoard::white_positions)
-      .def("black_positions", &GameBoard::black_positions);
+      .def("black_positions", &GameBoard::black_positions)
+      .def("__repr__", &GameBoard::to_string);
 
-  m.def("AIMax_best_move", &ai_max::color_best_move,
+  py::class_<Game>(m, "Game")
+      .def(py::init())
+      .def(py::init<GameBoard, Color>())
+      .def_property_readonly("board", &Game::board)
+      .def("valid_moves", &Game::valid_moves)
+      .def("is_valid_move", &Game::is_valid_move)
+      .def("place_piece", &Game::place_piece)
+      .def("is_game_over", &Game::is_game_over)
+      .def("reset", &Game::reset);
+
+  m.def("AIMax_best_move", &ai_max::best_move,
         py::call_guard<py::gil_scoped_release>());
 
 #ifdef VERSION_INFO

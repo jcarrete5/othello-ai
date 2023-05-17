@@ -6,28 +6,30 @@
 namespace othello {
 namespace ai_max {
 
-static int evaluate(const Color c, const GameBoard& board) {
-    return board.color_count(c) - board.color_count(get_opposite_color(c));
+static int evaluate(const Game& game) {
+    const auto& board         = game.board();
+    const auto my_color       = game.active_color();
+    const auto opponent_color = get_opposite_color(my_color);
+    return board.color_count(my_color) - board.color_count(opponent_color);
 }
 
-static GameBoard get_next_board(const Color c, const GameBoard& board, const Position& move) {
-    GameBoard next_board{board};
-    next_board.place_piece(c, move);
-    return next_board;
+static Game get_next_state(const Game& game, const Position& move) {
+    Game next{game};
+    next.place_piece(move);
+    return next;
 }
 
 // Negamax non-root node evaluation
 // Includes only value
-static int best_move_inner(const Color c, const GameBoard& board, size_t depth) {
-    std::vector<Position> potential_moves = board.valid_moves(c);
+static int best_move_inner(const Game& game, size_t depth) {
+    auto potential_moves = game.valid_moves();
     if (potential_moves.empty() || depth == 0) {
-        return evaluate(c, board);
+        return evaluate(game);
     }
 
-    int best_value = std::numeric_limits<int>::min();
+    auto best_value = std::numeric_limits<int>::min();
     for (auto move : potential_moves) {
-        GameBoard next_board{get_next_board(c, board, move)};
-        int value = -best_move_inner(c, next_board, depth - 1);
+        auto value = -best_move_inner(get_next_state(game, move), depth - 1);
         if (value > best_value) {
             best_value = value;
         }
@@ -37,15 +39,14 @@ static int best_move_inner(const Color c, const GameBoard& board, size_t depth) 
 
 // Negamax root node evaluation
 // Includes both move & value
-Position color_best_move(const Color c, const GameBoard& board, size_t depth) {
-    std::vector<Position> potential_moves = board.valid_moves(c);
+Position best_move(const Game& game, size_t depth) {
+    const auto potential_moves = game.valid_moves();
     assert(!potential_moves.empty());
 
     Position best_move;
-    int best_value = std::numeric_limits<int>::min();
+    auto best_value = std::numeric_limits<int>::min();
     for (auto move : potential_moves) {
-        GameBoard next_board{get_next_board(c, board, move)};
-        int value = -best_move_inner(c, next_board, depth - 1);
+        int value = -best_move_inner(get_next_state(game, move), depth - 1);
         if (value > best_value) {
             best_value = value;
             best_move  = move;

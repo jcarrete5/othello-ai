@@ -7,7 +7,7 @@ namespace ai_max {
 
 // Negamax root node evaluation
 // Includes both move & value
-Position color_best_move(const Color c, const GameBoard& board, size_t depth);
+Position best_move(const Game& game, size_t depth);
 
 } // namespace ai_max
 } // namespace othello
