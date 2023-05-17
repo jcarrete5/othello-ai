@@ -45,7 +45,7 @@ class Game:
         self._my_player = my_player
         self._opponent_player = opponent_player
         self._board = board if board is not None else Board()
-        self._no_moves = False
+        self._both_players_passed = False
         self._runner = threading.Thread(
             target=self._profile_loop if get_args().is_profiling_enabled else self.loop,
             name=f"GameThread ({Game.game_counter})",
@@ -85,7 +85,7 @@ class Game:
                 _logger.info("%s played %s", turn_player, move)
             except PassMove:
                 if passed_previous:
-                    self._no_moves = True
+                    self._both_players_passed = True
                 else:
                     passed_previous = True
                 _logger.info("%s passed their move", turn_player)
@@ -133,24 +133,18 @@ class Game:
 
     def _is_game_over(self) -> bool:
         filled = self._board.empty_cells() == 0  # No empty cells i.e. all spaces filled
-        no_white = self._board.white == 0
-        no_black = self._board.black == 0
-
-        if filled or self._no_moves:
+        if filled or self._both_players_passed:
             white_count = self._board.white.bit_count()
             black_count = self._board.black.bit_count()
             if white_count > black_count:
-                self._notify(EventType.game_over, Color.white, self._board.copy())
+                winner = Color.white
             elif white_count < black_count:
-                self._notify(EventType.game_over, Color.black, self._board.copy())
+                winner = Color.black
             else:
-                self._notify(EventType.game_over, None, self._board.copy())
-        elif no_white:
-            self._notify(EventType.game_over, Color.black, self._board.copy())
-        elif no_black:
-            self._notify(EventType.game_over, Color.white, self._board.copy())
-
-        return filled or no_white or no_black
+                winner = None
+            self._notify(EventType.game_over, winner, self._board.copy())
+            return True
+        return False
 
     def shutdown(self):
         """Cleanup resources required by the game and wait for completion."""
