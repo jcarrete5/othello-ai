@@ -6,8 +6,8 @@
 using namespace othello;
 
 TEST(AIMax, Simple) {
-    const int n_games = 10;
-    const int depth   = 8;
+    const int n_games = 100;
+    const int depth   = 14;
     Game game;
     for (int i = 0; i < n_games; ++i) {
         while (!game.is_game_over()) {

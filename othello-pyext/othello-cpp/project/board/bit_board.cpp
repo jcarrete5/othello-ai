@@ -220,21 +220,21 @@ BitBoard& BitBoard::shift_assign(const BitBoard::Position relative_offset)
     return *this;
 }
 
-BitBoard BitBoard::neighbors_cardinal(const Position& position)
+BitBoard BitBoard::neighbors_cardinal(const Position position)
 {
     auto board = BitBoard{position};
     return shift<Direction::right>(board) | shift<Direction::up>(board) | shift<Direction::left>(board) |
            shift<Direction::down>(board);
 }
 
-BitBoard BitBoard::neighbors_diagonal(const Position& position)
+BitBoard BitBoard::neighbors_diagonal(const Position position)
 {
     auto board = BitBoard{position};
     return shift<Direction::upright>(board) | shift<Direction::upleft>(board) | shift<Direction::downleft>(board) |
            shift<Direction::downright>(board);
 }
 
-BitBoard BitBoard::neighbors_cardinal_and_diagonal(const Position& position)
+BitBoard BitBoard::neighbors_cardinal_and_diagonal(const Position position)
 {
     return neighbors_cardinal(position) | neighbors_diagonal(position);
 }
@@ -247,6 +247,18 @@ std::size_t BitBoard::count() const
 BitBoard::Position BitBoard::to_position() const
 {
     return index_to_position(std::countl_zero(bits_));
+}
+
+std::vector<BitBoard> BitBoard::to_bitboard_position_vector() const
+{
+    std::vector<BitBoard> positions;
+    positions.reserve(n_bits);
+    for (BitBoard position{top_left}; position != BitBoard{0U}; position >>= 1) {
+        if (test_any(position)) {
+            positions.push_back(position);
+        }
+    }
+    return positions;
 }
 
 std::vector<BitBoard::Position> BitBoard::to_position_vector() const
@@ -263,15 +275,12 @@ std::vector<BitBoard::Position> BitBoard::to_position_vector() const
     return positions;
 }
 
-std::vector<BitBoard> BitBoard::to_bitboard_position_vector() const
+std::set<BitBoard> BitBoard::to_bitboard_position_set() const
 {
-    std::vector<BitBoard> positions;
-    for (int column = 0; column < board_size; column++) {
-        for (int row = 0; row < board_size; row++) {
-            BitBoard position{Position{row, column}};
-            if (test_any(position)) {
-                positions.push_back(position);
-            }
+    std::set<BitBoard> positions;
+    for (BitBoard position{top_left}; position != BitBoard{0U}; position >>= 1) {
+        if (test_any(position)) {
+            positions.insert(position);
         }
     }
     return positions;

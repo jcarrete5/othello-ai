@@ -32,7 +32,7 @@ class BitBoard
 
     constexpr explicit BitBoard() : BitBoard(0) {}
     constexpr explicit BitBoard(const Bits bits) : bits_(bits) {}
-    constexpr explicit BitBoard(const Position& position) : BitBoard(from_position(position)) {}
+    constexpr explicit BitBoard(const Position position) : BitBoard(from_position(position)) {}
     explicit BitBoard(const std::string& board);
 
     constexpr BitBoard(const BitBoard& other) = default;
@@ -129,11 +129,11 @@ class BitBoard
 
     [[nodiscard]] static BitBoard shift(BitBoard board, Direction direction, size_t n = 1);
 
-    static BitBoard neighbors_cardinal(const Position& position);
-    static BitBoard neighbors_diagonal(const Position& position);
-    static BitBoard neighbors_cardinal_and_diagonal(const Position& position);
+    static BitBoard neighbors_cardinal(Position position);
+    static BitBoard neighbors_diagonal(Position position);
+    static BitBoard neighbors_cardinal_and_diagonal(Position position);
 
-    [[nodiscard]] bool test(const Position& position) const
+    [[nodiscard]] bool test(const Position position) const
     {
         return test_any(BitBoard{position});
     }
@@ -161,7 +161,7 @@ class BitBoard
         return *this;
     }
 
-    BitBoard& set(const Position& position)
+    BitBoard& set(const Position position)
     {
         return set(BitBoard{position});
     }
@@ -172,7 +172,7 @@ class BitBoard
         return *this;
     }
 
-    BitBoard& clear(const Position& position)
+    BitBoard& clear(const Position position)
     {
         return clear(BitBoard{position});
     }
@@ -214,10 +214,11 @@ class BitBoard
 
     BitBoard& dilate(Direction direction, size_t n = 1);
 
-    [[nodiscard]] std::vector<Position> to_position_vector() const;
     [[nodiscard]] std::vector<BitBoard> to_bitboard_position_vector() const;
-    [[nodiscard]] Position to_position() const;
+    [[nodiscard]] std::vector<Position> to_position_vector() const;
+    [[nodiscard]] std::set<BitBoard> to_bitboard_position_set() const;
     [[nodiscard]] std::set<Position> to_position_set() const;
+    [[nodiscard]] Position to_position() const;
     [[nodiscard]] unsigned long long to_ullong() const
     {
         return bits_;
@@ -225,14 +226,6 @@ class BitBoard
 
     [[nodiscard]] std::string to_string() const;
 
-    bool operator==(const BitBoard other) const
-    {
-        return bits_ == other.bits_;
-    }
-    bool operator!=(const BitBoard other) const
-    {
-        return !(*this == other);
-    }
     BitBoard& operator<<=(size_t n)
     {
         bits_ <<= n;
@@ -283,6 +276,31 @@ class BitBoard
         return BitBoard{~bits_};
     }
 
+    friend bool operator==(const BitBoard& lhs, const BitBoard& rhs)
+    {
+        return lhs.bits_ == rhs.bits_;
+    }
+    friend bool operator!=(const BitBoard& lhs, const BitBoard& rhs)
+    {
+        return !(lhs == rhs);
+    }
+    friend bool operator<(const BitBoard& lhs, const BitBoard& rhs)
+    {
+        return lhs.bits_ < rhs.bits_;
+    }
+    friend bool operator>(const BitBoard& lhs, const BitBoard& rhs)
+    {
+        return rhs < lhs;
+    }
+    friend bool operator<=(const BitBoard& lhs, const BitBoard& rhs)
+    {
+        return !(lhs > rhs);
+    }
+    friend bool operator>=(const BitBoard& lhs, const BitBoard& rhs)
+    {
+        return !(lhs < rhs);
+    }
+
   private:
     Bits bits_;
 
@@ -302,20 +320,19 @@ class BitBoard
     static constexpr Bits negative_slope = 0b10000000'01000000'00100000'00010000'00001000'00000100'00000010'00000001;
     static constexpr Bits positive_slope = 0b00000001'00000010'00000100'00001000'00010000'00100000'01000000'10000000;
 
-    inline static constexpr BitBoard from_position(const Position& position);
+    inline static constexpr BitBoard from_position(Position position);
     inline static constexpr Position index_to_position(std::size_t index);
 
     friend void swap(BitBoard& lhs, BitBoard& rhs)
     {
         std::swap(lhs.bits_, rhs.bits_);
     }
+
+    friend struct std::hash<BitBoard>;
 };
 
-constexpr BitBoard BitBoard::from_position(const Position& position)
+constexpr BitBoard BitBoard::from_position(const Position position)
 {
-    if (position.x() < 0 || position.x() >= board_size || position.y() < 0 || position.y() >= board_size) {
-        throw std::invalid_argument("position outside of board");
-    }
     auto board = BitBoard::make_top_left();
     board.bits_ >>= position.x() * board_size;
     board.bits_ >>= position.y();
@@ -327,3 +344,12 @@ constexpr BitBoard::Position BitBoard::index_to_position(const std::size_t index
     using T = Position::dimension_type;
     return {static_cast<T>(index / board_size), static_cast<T>(index % board_size)};
 }
+
+template <>
+struct std::hash<BitBoard>
+{
+    std::size_t operator()(BitBoard const& bit_board) const noexcept
+    {
+        return std::hash<BitBoard::Bits>{}(bit_board.bits_);
+    }
+};

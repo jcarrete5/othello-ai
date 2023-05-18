@@ -19,7 +19,7 @@ static int evaluate(const Game& game)
 static Game get_next_state(const Game& game, const BitBoard move)
 {
     Game next{game};
-    next.place_piece(move);
+    next.place_piece_bitboard_position(move);
     return next;
 }
 

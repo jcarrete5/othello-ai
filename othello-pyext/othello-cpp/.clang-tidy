@@ -1,0 +1,18 @@
+Checks:
+    clang-diagnostic-*
+    clang-analyzer-*
+    bugprone-*
+    portability-*
+    readability-*
+    modernize-*
+    -modernize-use-trailing-return-type
+    cpp-core-guidelines-*
+    boost-*
+
+CheckOptions:
+    readability-identifier-naming.FunctionCase: lower_case
+    readability-identifier-naming.VariableCase: lower_case
+    readability-identifier-naming.PrivateMemberSuffix: _
+    readability-identifier-naming.ClassCase: CamelCase
+    readability-identifier-naming.TemplateParameterCase: CamelCase
+    readability-identifier-naming.TypedefCase: CamelCase

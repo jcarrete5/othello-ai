@@ -4,6 +4,7 @@ import cProfile
 import enum
 import logging
 import threading
+from typing import Optional
 
 from .args import get_args
 from .board import Board
@@ -107,6 +108,11 @@ class Game:
             self._notify(EventType.turn_change, self._board.turn_player_color)
             self._notify(EventType.board_change, self._board.copy())
 
+        white_count = self._board.white.bit_count()
+        black_count = self._board.black.bit_count()
+        _logger.info("Game Over. white: %d, black: %d", white_count, black_count)
+        self._notify(EventType.game_over, self.winner(), self._board.copy())
+
     def _notify(self, e: EventType, *args):
         err_str = f"Incorrect arguments for {e}: {args}"
         if e is EventType.board_change:
@@ -118,9 +124,6 @@ class Game:
             color, board = args
             assert isinstance(color, Color) or color is None, err_str
             assert isinstance(board, Board), err_str
-            white_count = self._board.white.bit_count()
-            black_count = self._board.black.bit_count()
-            _logger.info("Game Over. white: %d, black: %d", white_count, black_count)
             self._my_player.signal_game_over(color, board)
             self._opponent_player.signal_game_over(color, board)
         elif e is EventType.turn_change:
@@ -132,19 +135,20 @@ class Game:
             assert False, f"{e} not implemented"
 
     def _is_game_over(self) -> bool:
-        filled = self._board.empty_cells() == 0  # No empty cells i.e. all spaces filled
-        if filled or self._both_players_passed:
-            white_count = self._board.white.bit_count()
-            black_count = self._board.black.bit_count()
-            if white_count > black_count:
-                winner = Color.white
-            elif white_count < black_count:
-                winner = Color.black
-            else:
-                winner = None
-            self._notify(EventType.game_over, winner, self._board.copy())
-            return True
-        return False
+        return self._board.empty_cells() == 0 or self._both_players_passed
+
+    def winner(self) -> Optional[Color]:
+        if not self._is_game_over():
+            return None
+        white_count = self._board.white.bit_count()
+        black_count = self._board.black.bit_count()
+        if white_count > black_count:
+            winner = Color.white
+        elif white_count < black_count:
+            winner = Color.black
+        else:
+            winner = None
+        return winner
 
     def shutdown(self):
         """Cleanup resources required by the game and wait for completion."""

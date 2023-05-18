@@ -53,15 +53,16 @@ class GameBoard
 
   public:
     [[nodiscard]] std::optional<Color> at(Position position) const;
-    void set(Color color, Position position);
-    void set(Color color, BitBoard position);
-    void clear(const Position position)
+    void set_position(Color color, Position position);
+    void set_bitboard_position(Color color, BitBoard position);
+    void clear_position(const Position position)
     {
         white_.clear(position);
         black_.clear(position);
     }
-    void clear(const BitBoard position)
+    void clear_bitboard_position(const BitBoard position)
     {
+        assert(position.count() == 1);
         white_.clear(position);
         black_.clear(position);
     }
@@ -141,10 +142,10 @@ class Game
     void set_up()
     {
         board_.clear_all();
-        board_.set(Color::white, {3, 3});
-        board_.set(Color::white, {4, 4});
-        board_.set(Color::black, {4, 3});
-        board_.set(Color::black, {3, 4});
+        board_.set_position(Color::white, {3, 3});
+        board_.set_position(Color::white, {4, 4});
+        board_.set_position(Color::black, {4, 3});
+        board_.set_position(Color::black, {3, 4});
     }
 
     [[nodiscard]] Color active_color() const
@@ -161,11 +162,18 @@ class Game
     {
         return !valid_moves_bitboard().empty();
     }
+    [[nodiscard]] bool is_valid_move(const Position position) const
+    {
+        if (position.x() < 0 || position.x() >= BitBoard::board_size || position.y() < 0 || position.y() >= BitBoard::board_size) {
+            return false;
+        }
+        return valid_moves_bitboard().test(position);
+    }
     [[nodiscard]] std::set<Position> valid_moves() const;
     [[nodiscard]] BitBoard valid_moves_bitboard() const;
 
     void place_piece(Position position);
-    void place_piece(BitBoard position);
+    void place_piece_bitboard_position(BitBoard position);
     void next_turn()
     {
         active_color_ = get_opposite_color(active_color());
@@ -207,7 +215,7 @@ class Game
 template <Direction D>
 BitBoard Game::directional_valid_moves(const Color color) const
 {
-    BitBoard moves;
+    BitBoard moves{0};
     BitBoard candidates{board_.opposite_pieces(color) & BitBoard::shift<D>(board_.pieces(color))};
     while (!candidates.empty()) {
         const auto shifted = BitBoard::shift<D>(candidates);
@@ -220,6 +228,7 @@ BitBoard Game::directional_valid_moves(const Color color) const
 template <Direction D>
 void Game::directional_capture(const BitBoard position)
 {
+    assert(position.count() == 1);
     const Color color = active_color();
     State<D> state{color, board_, position};
     while (state.should_keep_dilating()) {

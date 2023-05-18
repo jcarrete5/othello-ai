@@ -4,39 +4,39 @@
 
 namespace othello {
 
-std::optional<Color> GameBoard::at(const Position p) const
+std::optional<Color> GameBoard::at(const Position position) const
 {
-    if (white_.test(p))
+    if (white_.test(position))
         return Color::white;
-    if (black_.test(p))
+    if (black_.test(position))
         return Color::black;
     return {};
 }
 
-void GameBoard::set(const Color c, const Position p)
+void GameBoard::set_position(const Color color, const Position position)
 {
-    switch (c) {
+    switch (color) {
     case Color::black:
-        black_.set(p);
-        white_.clear(p);
+        black_.set(position);
+        white_.clear(position);
         break;
     case Color::white:
-        white_.set(p);
-        black_.clear(p);
+        white_.set(position);
+        black_.clear(position);
         break;
     }
 }
 
-void GameBoard::set(const Color c, const BitBoard p)
+void GameBoard::set_bitboard_position(const Color color, const BitBoard position)
 {
-    switch (c) {
+    switch (color) {
     case Color::black:
-        black_.set(p);
-        white_.clear(p);
+        black_.set(position);
+        white_.clear(position);
         break;
     case Color::white:
-        white_.set(p);
-        black_.clear(p);
+        white_.set(position);
+        black_.clear(position);
         break;
     }
 }
@@ -108,32 +108,33 @@ std::set<Position> Game::valid_moves() const
 
 BitBoard Game::valid_moves_bitboard() const
 {
-    const Color& c = active_color();
+    const Color& color = active_color();
     BitBoard moves =
-        (directional_valid_moves<Direction::right>(c) | directional_valid_moves<Direction::upright>(c) |
-         directional_valid_moves<Direction::up>(c) | directional_valid_moves<Direction::upleft>(c) |
-         directional_valid_moves<Direction::left>(c) | directional_valid_moves<Direction::downleft>(c) |
-         directional_valid_moves<Direction::down>(c) | directional_valid_moves<Direction::downright>(c));
+        (directional_valid_moves<Direction::right>(color) | directional_valid_moves<Direction::upright>(color) |
+         directional_valid_moves<Direction::up>(color) | directional_valid_moves<Direction::upleft>(color) |
+         directional_valid_moves<Direction::left>(color) | directional_valid_moves<Direction::downleft>(color) |
+         directional_valid_moves<Direction::down>(color) | directional_valid_moves<Direction::downright>(color));
     return moves;
 }
 
-void Game::place_piece(const BitBoard p)
+void Game::place_piece_bitboard_position(const BitBoard position)
 {
-    directional_capture<Direction::right>(p);
-    directional_capture<Direction::upright>(p);
-    directional_capture<Direction::up>(p);
-    directional_capture<Direction::upleft>(p);
-    directional_capture<Direction::left>(p);
-    directional_capture<Direction::downleft>(p);
-    directional_capture<Direction::down>(p);
-    directional_capture<Direction::downright>(p);
-    board_.set(active_color(), p);
+    assert(position.count() == 1);
+    directional_capture<Direction::right>(position);
+    directional_capture<Direction::upright>(position);
+    directional_capture<Direction::up>(position);
+    directional_capture<Direction::upleft>(position);
+    directional_capture<Direction::left>(position);
+    directional_capture<Direction::downleft>(position);
+    directional_capture<Direction::down>(position);
+    directional_capture<Direction::downright>(position);
+    board_.set_bitboard_position(active_color(), position);
     placed_piece_ = true;
 }
 
-void Game::place_piece(const Position p)
+void Game::place_piece(const Position position)
 {
-    place_piece(BitBoard{p});
+    place_piece_bitboard_position(BitBoard{position});
 }
 
 } // namespace othello

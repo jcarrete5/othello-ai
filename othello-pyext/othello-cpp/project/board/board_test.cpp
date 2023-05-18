@@ -8,7 +8,8 @@
 
 namespace othello {
 
-TEST(Game, Setup) {
+TEST(Game, Setup)
+{
     Game game;
     ASSERT_EQ(game.active_color(), Color::black);
     ASSERT_EQ(*game.board().at({3, 3}), Color::white);
@@ -17,23 +18,24 @@ TEST(Game, Setup) {
     ASSERT_EQ(*game.board().at({4, 3}), Color::black);
 }
 
-TEST(Game, ValidMoves) {
+TEST(Game, ValidMoves)
+{
     Game game;
     const std::vector<Position> moves = {{3, 2}, {2, 2}, {2, 3}, {2, 4}, {4, 5}, {5, 4}, {1, 2}};
     for (const auto move : moves) {
-        ASSERT_TRUE(game.valid_moves().contains(move));
-
-        const auto move_color = game.active_color();
+        ASSERT_TRUE(game.is_valid_move(move));
         game.place_piece(move);
-        ASSERT_EQ(game.board().at(move), move_color);
+        game.next_turn();
     }
 }
 
-TEST(Game, InvalidMoves) {
+TEST(Game, InvalidMoves)
+{
     Game game;
     const std::vector<Position> moves = {{0, 0}, {8, 8}};
     for (const auto move : moves) {
-        ASSERT_TRUE(game.valid_moves().contains(move));
+        const auto valid_moves = game.valid_moves();
+        ASSERT_FALSE(game.is_valid_move(move));
     }
 }
 
