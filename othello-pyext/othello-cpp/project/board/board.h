@@ -174,17 +174,9 @@ class Game
 
     void place_piece(Position position);
     void place_piece_bitboard_position(BitBoard position);
-    void next_turn()
-    {
-        active_color_ = get_opposite_color(active_color());
-        if (!placed_piece_) {
-            ++pass_count_;
-        } else {
-            pass_count_ = 0;
-            placed_piece_ = false;
-        }
+    void skip_turn() {
+        next_turn();
     }
-
     [[nodiscard]] bool is_game_over() const
     {
         return pass_count_ == 2;
@@ -210,6 +202,18 @@ class Game
 
     template <Direction D>
     void directional_capture(BitBoard position);
+
+    void next_turn()
+    {
+        active_color_ = get_opposite_color(active_color());
+        if (!placed_piece_) {
+            ++pass_count_;
+        } else {
+            pass_count_ = 0;
+            placed_piece_ = false;
+        }
+    }
+
 };
 
 template <Direction D>

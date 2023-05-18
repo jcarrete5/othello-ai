@@ -25,7 +25,6 @@ TEST(Game, ValidMoves)
     for (const auto move : moves) {
         ASSERT_TRUE(game.is_valid_move(move));
         game.place_piece(move);
-        game.next_turn();
     }
 }
 

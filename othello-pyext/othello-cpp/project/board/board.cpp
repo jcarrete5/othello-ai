@@ -130,6 +130,7 @@ void Game::place_piece_bitboard_position(const BitBoard position)
     directional_capture<Direction::downright>(position);
     board_.set_bitboard_position(active_color(), position);
     placed_piece_ = true;
+    next_turn();
 }
 
 void Game::place_piece(const Position position)

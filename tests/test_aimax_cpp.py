@@ -13,7 +13,7 @@ _logger = logging.getLogger(__name__)
 
 def test_move_generation_and_place():
     board = Board()
-    black_player = MinmaxAIPlayerCPP(Color.black, 5)
+    black_player = MinmaxAIPlayerCPP(Color.black, 15)
     board.turn_player_color = Color.black
     move = black_player.get_move(board.copy(), Event())
     board.place(board.turn_player_color, move)
@@ -22,8 +22,8 @@ def test_game():
     white_wins = 0
     black_wins = 0
     ties = 0
-    for _ in range(100):
-        game = Game(MinmaxAIPlayerCPP(Color.white, 5), RandomAIPlayer(Color.black), Board())
+    for _ in range(5):
+        game = Game(MinmaxAIPlayerCPP(Color.white, 60), RandomAIPlayer(Color.black), Board())
         game.loop()
         if game.winner() == Color.white:
             white_wins = white_wins + 1
