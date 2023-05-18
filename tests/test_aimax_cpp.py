@@ -23,7 +23,7 @@ def test_game():
     black_wins = 0
     ties = 0
     for _ in range(5):
-        game = Game(MinmaxAIPlayerCPP(Color.white, 60), RandomAIPlayer(Color.black), Board())
+        game = Game(MinmaxAIPlayerCPP(Color.white, 7), RandomAIPlayer(Color.black), Board())
         game.loop()
         if game.winner() == Color.white:
             white_wins = white_wins + 1

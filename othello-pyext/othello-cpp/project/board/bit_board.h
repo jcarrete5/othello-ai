@@ -106,6 +106,11 @@ class BitBoard
         return BitBoard{all_edge};
     }
 
+    static constexpr BitBoard make_all_corners()
+    {
+        return BitBoard{all_corners};
+    }
+
     static constexpr BitBoard make_positive_slope()
     {
         return BitBoard{positive_slope};
@@ -189,6 +194,7 @@ class BitBoard
     [[nodiscard]] bool on_edge(Direction direction) const;
 
     [[nodiscard]] bool on_any_edge() const;
+    [[nodiscard]] bool on_any_corner() const;
 
     template <Direction D>
     BitBoard& shift_assign(size_t n = 1);
@@ -317,6 +323,7 @@ class BitBoard
     static constexpr Bits bottom_right_edge = bottom_edge | right_edge;
     static constexpr Bits bottom_left_edge = bottom_edge | left_edge;
     static constexpr Bits all_edge = right_edge | top_edge | left_edge | bottom_edge;
+    static constexpr Bits all_corners = top_right | top_left | bottom_left | bottom_right;
     static constexpr Bits negative_slope = 0b10000000'01000000'00100000'00010000'00001000'00000100'00000010'00000001;
     static constexpr Bits positive_slope = 0b00000001'00000010'00000100'00001000'00010000'00100000'01000000'10000000;
 

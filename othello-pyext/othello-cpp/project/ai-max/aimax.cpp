@@ -3,6 +3,8 @@
 
 #include <cassert>
 
+#include <array>
+
 namespace othello::ai_max {
 
 const static auto min_score = std::numeric_limits<int>::min();
@@ -10,10 +12,23 @@ const static auto max_score = std::numeric_limits<int>::max();
 
 static int evaluate(const Game& game)
 {
+    static constexpr auto corner_extra_weight = 5;
     const auto& board = game.board();
     const auto my_color = game.active_color();
     const auto opponent_color = get_opposite_color(my_color);
-    return static_cast<int>(board.color_count(my_color)) - static_cast<int>(board.color_count(opponent_color));
+    const auto my_pieces = board.pieces(my_color);
+    const auto opponent_pieces = board.pieces(opponent_color);
+    const auto n_mine = static_cast<int>(my_pieces.count());
+    const auto n_opponent = static_cast<int>(opponent_pieces.count());
+
+    if (game.is_game_over()) {
+        return n_mine - n_opponent;
+    }
+
+    const auto n_corners_mine = static_cast<int>((my_pieces & BitBoard::make_all_corners()).count());
+    const auto n_corners_opponent = static_cast<int>((opponent_pieces & BitBoard::make_all_corners()).count());
+
+    return n_mine - n_opponent + corner_extra_weight * (n_corners_mine - n_corners_opponent);
 }
 
 static Game get_next_state(const Game& game, const BitBoard move)

@@ -72,26 +72,21 @@ class GameBoard
         black_.clear_all();
     }
 
-    [[nodiscard]] std::size_t white_count() const
-    {
-        return white_.count();
-    }
-    [[nodiscard]] std::size_t black_count() const
-    {
-        return black_.count();
-    }
-    [[nodiscard]] std::size_t color_count(const Color color) const
-    {
-        return pieces(color).count();
+    [[nodiscard]] BitBoard white() const {
+        return white_;
     }
 
-    [[nodiscard]] std::vector<Position> white_positions() const
-    {
-        return white_.to_position_vector();
+    [[nodiscard]] BitBoard black() const {
+        return black_;
     }
-    [[nodiscard]] std::vector<Position> black_positions() const
+
+    [[nodiscard]] BitBoard pieces(const Color color) const
     {
-        return black_.to_position_vector();
+        return (color == Color::white) ? white_ : black_;
+    }
+    [[nodiscard]] BitBoard opposite_pieces(const Color color) const
+    {
+        return pieces(get_opposite_color(color));
     }
 
     friend std::ostream& operator<<(std::ostream& os, const GameBoard& board);
@@ -110,15 +105,7 @@ class GameBoard
     {
         return (color == Color::white) ? white_ : black_;
     }
-    [[nodiscard]] const BitBoard& pieces(const Color color) const
-    {
-        return (color == Color::white) ? white_ : black_;
-    }
     BitBoard& opposite_pieces(const Color color)
-    {
-        return pieces(get_opposite_color(color));
-    }
-    [[nodiscard]] const BitBoard& opposite_pieces(const Color color) const
     {
         return pieces(get_opposite_color(color));
     }

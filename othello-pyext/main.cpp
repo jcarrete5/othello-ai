@@ -38,8 +38,6 @@ PYBIND11_MODULE(othello_cpp, m) {
       .def("set", &GameBoard::set_position)
       .def("clear", &GameBoard::clear_position)
       .def("clear_all", &GameBoard::clear_all)
-      .def("white_positions", &GameBoard::white_positions)
-      .def("black_positions", &GameBoard::black_positions)
       .def("__repr__", &GameBoard::to_string);
 
   py::class_<Game>(m, "Game")

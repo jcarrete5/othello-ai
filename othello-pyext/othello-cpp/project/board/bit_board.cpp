@@ -97,6 +97,11 @@ bool BitBoard::on_any_edge() const
     return test_any(make_all_edge());
 }
 
+bool BitBoard::on_any_corner() const
+{
+    return test_any(make_all_corners());
+}
+
 BitBoard BitBoard::shift(BitBoard board, const Direction direction, const size_t n)
 {
     return board.shift_assign(direction, n);
