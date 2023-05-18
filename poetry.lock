@@ -114,7 +114,7 @@ python-versions = ">=3.5"
 
 [[package]]
 name = "othello_cpp"
-version = "0.1.1"
+version = "0.1.9"
 description = ""
 category = "main"
 optional = false
